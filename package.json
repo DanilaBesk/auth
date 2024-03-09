@@ -10,7 +10,8 @@
     "test": "jest --runInBand",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
-    "prettier": "prettier --config .prettierrc src/**/*.ts --write"
+    "prettier": "prettier --config .prettierrc src/**/*.ts --write",
+    "prepare": "husky"
   },
   "keywords": [],
   "author": "Danila Beskorovaev <danilbeskorovaev546@gmail.com>",
