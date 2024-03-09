@@ -4,17 +4,17 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "target": "es2018",
+    "target": "ES2018",
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
-    "module": "commonjs",
+    "module": "CommonJS",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "outDir": "dist"
+    "outDir": "./dist"
   },
   "include": ["src", "tests"],
   "exclude": ["node_modules"]

@@ -1,14 +1,61 @@
 {
   "root": true,
+  "env": {
+    "node": true,
+    "jest": true,
+    "es6": true
+  },
   "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint", "prettier"],
-  "extends": [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/eslint-recommended",
-    "plugin:@typescript-eslint/recommended",
-    "prettier"
-  ],
+  "parserOptions": {
+    "project": ["./tsconfig.json"],
+    "sourceType": "module",
+    "ecmaVersion": 2018
+  },
+  "extends": ["eslint:recommended", "plugin:promise/recommended"],
   "rules": {
-    "prettier/prettier": 2
+    //* Avoid Bugs
+    "no-undef": "error",
+    "semi": "error",
+    "semi-spacing": "error",
+    //* Best Practices
+    "eqeqeq": "error",
+    "no-invalid-this": "error",
+    "no-return-assign": "error",
+    "no-console": "warn",
+    "no-unused-expressions": ["error", { "allowTernary": true }],
+    "no-useless-concat": "error",
+    "no-useless-return": "error",
+    "no-constant-condition": "warn",
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "req|res|next|_" }],
+    //* Enhance Readability
+    "indent": ["error", 2, { "SwitchCase": 1 }],
+    "no-mixed-spaces-and-tabs": "warn",
+    "space-before-blocks": "error",
+    "space-in-parens": "error",
+    "space-infix-ops": "error",
+    "space-unary-ops": "error",
+    "quotes": ["error", "single"],
+    //
+    "max-len": ["error", { "code": 120 }],
+    "max-lines": ["error", { "max": 300 }],
+    "keyword-spacing": "error",
+    "multiline-ternary": ["error", "never"],
+    "no-mixed-operators": "error",
+    //
+    "no-multiple-empty-lines": ["error", { "max": 2, "maxEOF": 1 }],
+    "no-whitespace-before-property": "error",
+    "nonblock-statement-body-position": "error",
+    "object-property-newline": [
+      "error",
+      { "allowAllPropertiesOnSameLine": true }
+    ],
+    //* ES6
+    "arrow-spacing": "error",
+    "no-confusing-arrow": "error",
+    "no-duplicate-imports": "error",
+    "no-var": "error",
+    "object-shorthand": "off",
+    "prefer-const": "error",
+    "prefer-template": "warn"
   }
 }
