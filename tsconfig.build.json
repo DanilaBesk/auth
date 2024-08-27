@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": ["**/tests/**", "**/__mocks__/**", "**/*.test.*"],
+  "compilerOptions": {
+    "outDir": "dist"
+  },
+  "tsc-alias": {
+    "resolveFullPaths": true
+  }
+}

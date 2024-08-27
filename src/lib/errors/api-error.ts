@@ -16,7 +16,7 @@ export class ApiError extends Error {
   static UnauthorizedError(errors: string[]) {
     return new ApiError(401, 'Unauthorized Error', errors);
   }
-  static ZodValidationError(error: ZodError) {
+  static ValidationError(error: ZodError) {
     const errors = error.errors?.map((err) => err.message);
     return new ApiError(400, 'Validation Error', errors);
   }

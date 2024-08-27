@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { ApiError } from '@/lib/errors/api-error';
+import { ApiError } from '#/lib/errors/api-error';
 
 export const validateSchema = <TOutput>(
   schema: z.Schema<TOutput>,
@@ -8,7 +8,7 @@ export const validateSchema = <TOutput>(
 ): TOutput => {
   const result = schema.safeParse(data);
   if (!result.success) {
-    throw ApiError.ZodValidationError(result.error);
+    throw ApiError.ValidationError(result.error);
   }
   return result.data;
 };

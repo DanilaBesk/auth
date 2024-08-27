@@ -1,23 +1,20 @@
 import express, { Application } from 'express';
 import cors from 'cors';
-import * as dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 
-import { ErrorMiddleware } from '@/middlewares/error-middleware';
-import { db } from '@/lib/db';
-
-dotenv.config();
-
-const PORT = process.env.PORT || 5000;
+import { ErrorMiddleware } from '#/middlewares/error-middleware';
+import { prisma } from '#/lib/prisma';
+import { CONFIG } from '#config';
 
 export const app: Application = express();
 
 app.use(
   cors({
     credentials: true,
-    origin: process.env.CLIENT_URL,
+    origin: CONFIG.CLIENT_URL,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    preflightContinue: false
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   })
 );
 app.use(express.json());
@@ -26,9 +23,9 @@ app.use(ErrorMiddleware);
 
 const start = async () => {
   try {
-    await db.$connect();
-    app.listen(PORT, () => {
-      console.info(`Server start on PORT ${PORT}`);
+    await prisma.$connect();
+    app.listen(CONFIG.PORT, () => {
+      console.info(`Server start on PORT ${CONFIG.PORT}`);
     });
   } catch (error) {
     console.error(error);
