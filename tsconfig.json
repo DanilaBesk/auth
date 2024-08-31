@@ -11,7 +11,7 @@
     "moduleResolution": "Node",
     "resolveJsonModule": true
   },
-  "include": ["src", "config.ts"],
+  "include": ["src", "config.ts", "jest.config.base.ts", "jest.config.unit.ts"],
   "exclude": ["node_modules"],
   "extends": "./tsconfig.paths.json"
 }

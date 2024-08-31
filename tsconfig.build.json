@@ -1,6 +1,12 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["**/tests/**", "**/__mocks__/**", "**/*.test.*"],
+  "exclude": [
+    "**/tests/**",
+    "**/__mocks__/**",
+    "**/*.test.*",
+    "jest.config.base.ts",
+    "jest.config.unit.ts"
+  ],
   "compilerOptions": {
     "outDir": "dist"
   },
