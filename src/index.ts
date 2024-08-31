@@ -1,9 +1,9 @@
-import express, { Application } from 'express';
-import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import cors from 'cors';
+import express, { Application } from 'express';
 
+import { prisma } from '#/lib/db/prisma';
 import { ErrorMiddleware } from '#/middlewares/error-middleware';
-import { prisma } from '#/lib/prisma';
 import { CONFIG } from '#config';
 
 export const app: Application = express();
