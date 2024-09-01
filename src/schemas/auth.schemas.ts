@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { capitalizeFirstLetter } from '#/lib/function-utils';
-import { FlattenSchemaTypes } from '#/lib/type-utils';
+import { capitalizeFirstLetter } from '#/utils/string-utils';
+import { FlattenSchemaTypes } from '#/types/zod-types';
 
 function createValidationOptions(fieldName: string, expectedType: string) {
   return {
@@ -57,6 +57,7 @@ export const RegistrationSchema = z.object({
   })
 });
 export type TRegistration = FlattenSchemaTypes<typeof RegistrationSchema>;
+export type TVerifyActivationCode = Pick<TRegistration, 'email' | 'code'>;
 
 export const LoginSchema = z.object({
   body: z.object({

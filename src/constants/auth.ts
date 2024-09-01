@@ -1,2 +1,0 @@
-export const MAX_REFRESH_TOKENS_FOR_USER = 5;
-export const MAX_PASSWORD_SYMBOLS = 60;

@@ -1,6 +1,6 @@
-import { AnyZodObject, z } from 'zod';
-import { ValidationError } from '#/lib/errors/api-error';
 import { Request } from 'express';
+import { AnyZodObject, z } from 'zod';
+import { ValidationError } from '#/errors/api-error';
 
 export const validateData = async <T extends AnyZodObject>(
   schema: T,
@@ -9,7 +9,10 @@ export const validateData = async <T extends AnyZodObject>(
   const result = await schema.safeParseAsync(req);
 
   if (!result.success) {
-    throw new ValidationError(result.error);
+    throw new ValidationError({
+      errors: result.error.issues.map((issue) => issue.message),
+      cause: result.error
+    });
   }
 
   return result.data;

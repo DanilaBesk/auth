@@ -2,8 +2,8 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { Application } from 'express';
 
-import { prisma } from '#/lib/db/prisma';
 import { ErrorMiddleware } from '#/middlewares/error-middleware';
+import { prisma } from '#/providers/prisma.provider';
 import { CONFIG } from '#config';
 
 export const app: Application = express();
