@@ -56,8 +56,14 @@ export const RegistrationSchema = z.object({
     ua: USER_AGENT
   })
 });
-export type TRegistration = FlattenSchemaTypes<typeof RegistrationSchema>;
-export type TVerifyActivationCode = Pick<TRegistration, 'email' | 'code'>;
+export type TRegistration = Omit<
+  FlattenSchemaTypes<typeof RegistrationSchema>,
+  'code'
+>;
+export type TVerifyActivationCode = Pick<
+  FlattenSchemaTypes<typeof RegistrationSchema>,
+  'email' | 'code'
+>;
 
 export const LoginSchema = z.object({
   body: z.object({
