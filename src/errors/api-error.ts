@@ -26,16 +26,6 @@ export class UnauthorizedError extends ApiError {
     super({ status: 401, message, cause });
   }
 }
-export class DataBaseError extends ApiError {
-  constructor({ message, cause }: { message: string; cause?: unknown }) {
-    super({ status: 500, message, cause });
-  }
-}
-export class InternalError extends ApiError {
-  constructor({ message, cause }: { message: string; cause?: unknown }) {
-    super({ status: 500, message, cause });
-  }
-}
 
 export class ValidationError extends ApiError {
   errors: string[];
@@ -45,25 +35,45 @@ export class ValidationError extends ApiError {
   }
 }
 export class ActivationError extends ApiError {
-  constructor({
-    status = 400,
-    message,
-    cause
-  }: {
-    status: number;
-    message: string;
-    cause?: unknown;
-  }) {
-    super({ status, message, cause });
+  constructor({ status = 400, message }: { status: number; message: string }) {
+    super({ status, message });
   }
 }
 export class ActivationMaxAttemptsExceededError extends ActivationError {
-  constructor({ message, cause }: { message: string; cause?: unknown }) {
-    super({ status: 429, message, cause });
+  constructor() {
+    super({
+      status: 429,
+      message: 'No attempts left, request a new code'
+    });
   }
 }
 export class ActivationRateLimitError extends ActivationError {
-  constructor({ message, cause }: { message: string; cause?: unknown }) {
-    super({ status: 403, message, cause });
+  secondsUntilNextCode: number;
+
+  constructor({ secondsUntilNextCode }: { secondsUntilNextCode: number }) {
+    super({
+      status: 403,
+      message: `Please wait ${Math.ceil(secondsUntilNextCode)} seconds before requesting a new code`
+    });
+    this.secondsUntilNextCode = secondsUntilNextCode;
+  }
+}
+export class ActivationCodeNotFoundOrExpired extends ActivationError {
+  constructor() {
+    super({
+      status: 404,
+      message: 'Activation code not found or expired'
+    });
+  }
+}
+export class ActivationCodeIncorrect extends ActivationError {
+  attemptsLeft: number;
+
+  constructor({ attemptsLeft }: { attemptsLeft: number }) {
+    super({
+      status: 404,
+      message: `Incorrect code. Attempts left: ${attemptsLeft}`
+    });
+    this.attemptsLeft = attemptsLeft;
   }
 }
