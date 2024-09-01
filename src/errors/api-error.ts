@@ -35,16 +35,19 @@ export class ValidationError extends ApiError {
   }
 }
 export class ActivationError extends ApiError {
-  constructor({ status = 400, message }: { status: number; message: string }) {
+  constructor({ status, message }: { status: number; message: string }) {
     super({ status, message });
   }
 }
 export class ActivationMaxAttemptsExceededError extends ActivationError {
-  constructor() {
+  secondsUntilNextCode: number;
+
+  constructor({ secondsUntilNextCode }: { secondsUntilNextCode: number }) {
     super({
       status: 429,
       message: 'No attempts left, request a new code'
     });
+    this.secondsUntilNextCode = secondsUntilNextCode;
   }
 }
 export class ActivationRateLimitError extends ActivationError {
@@ -52,7 +55,7 @@ export class ActivationRateLimitError extends ActivationError {
 
   constructor({ secondsUntilNextCode }: { secondsUntilNextCode: number }) {
     super({
-      status: 403,
+      status: 429,
       message: `Please wait ${Math.ceil(secondsUntilNextCode)} seconds before requesting a new code`
     });
     this.secondsUntilNextCode = secondsUntilNextCode;
@@ -71,7 +74,7 @@ export class ActivationCodeIncorrect extends ActivationError {
 
   constructor({ attemptsLeft }: { attemptsLeft: number }) {
     super({
-      status: 404,
+      status: 400,
       message: `Incorrect code. Attempts left: ${attemptsLeft}`
     });
     this.attemptsLeft = attemptsLeft;
