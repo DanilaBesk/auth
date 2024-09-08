@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 export const getActivationCodeHtml = (code: number) => `<!doctype html>
 <html lang="ru">
   <head>
@@ -49,6 +50,12 @@ export const getActivationCodeHtml = (code: number) => `<!doctype html>
         color: #888888;
         text-align: center;
       }
+      .signature {
+        font-size: 16px;
+        color: #333333;
+        text-align: center;
+        margin-top: 20px;
+      }
     </style>
   </head>
   <body>
@@ -56,12 +63,15 @@ export const getActivationCodeHtml = (code: number) => `<!doctype html>
       <h1>Код активации</h1>
       <p>Здравствуйте!</p>
       <p>
-        Благодарим вас за использование нашего сервиса. Для завершения
-        регистрации, пожалуйста, введите следующий код активации:
+        Благодарим вас за использование нашего сервиса. Для завершения регистрации, пожалуйста, введите следующий код активации:
       </p>
       <div class="code">${code}</div>
       <p class="footer">
         Если вы не запрашивали этот код, просто проигнорируйте это письмо.
+      </p>
+      <p class="signature">
+        С уважением,<br />
+        Команда DanilaBesk
       </p>
     </div>
   </body>

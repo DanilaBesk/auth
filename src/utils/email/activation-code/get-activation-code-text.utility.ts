@@ -6,4 +6,7 @@ export const getActivationCodeText = (code: number): string => `
 Код активации: ${code}
 
 Если вы не запрашивали этот код, просто проигнорируйте это письмо.
+
+С уважением,
+Команда DanilaBesk
 `;
