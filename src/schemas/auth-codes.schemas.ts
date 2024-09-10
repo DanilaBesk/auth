@@ -1,6 +1,7 @@
+import { z } from 'zod';
+
 import { EMAIL } from '#/schemas/user.schemas';
 import { createValidationOptions } from '#/schemas/utils/create-validation-options.utility';
-import { z } from 'zod';
 
 export const ACTIVATION_CODE = z
   .number(createValidationOptions('activation code', 'number'))

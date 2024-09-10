@@ -68,7 +68,7 @@ export const LoginSchema = z.object({
 });
 
 export const LogoutSchema = z.object({
-  cookie: z.object({
+  signedCookies: z.object({
     refreshToken: REFRESH_TOKEN
   })
 });
