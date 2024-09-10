@@ -1,5 +1,8 @@
 /* eslint-disable max-len */
-export const getUpdateEmailHtml = (newEmail: string) => `<!doctype html>
+export const getChangeEmailHtml = (
+  code: number,
+  newEmail: string
+) => `<!doctype html>
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
@@ -45,6 +48,19 @@ export const getUpdateEmailHtml = (newEmail: string) => `<!doctype html>
         color: #007bff;
         margin-bottom: 20px;
       }
+      .code {
+        font-size: 24px;
+        font-weight: bold;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 15px;
+        border: 2px solid #007bff;
+        border-radius: 8px;
+        background-color: #e9f4ff;
+        color: #007bff;
+        margin-bottom: 20px;
+      }
       .footer {
         font-size: 14px;
         color: #888888;
@@ -68,6 +84,10 @@ export const getUpdateEmailHtml = (newEmail: string) => `<!doctype html>
       <p>
         Ваш новый адрес электронной почты: <span class="new-email">${newEmail}</span>
       </p>
+      <p>
+        Пожалуйста, используйте следующий код для подтверждения изменения электронной почты:
+      </p>
+      <div class="code">${code}</div>
       <p>
         Если вы не делали запрос на обновление электронной почты, просто проигнорируйте это письмо. Ваш текущий адрес электронной почты останется неизменным.
       </p>
