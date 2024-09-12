@@ -67,6 +67,14 @@ export class MaxRefreshSessionsExceededError extends ApiError {
   }
 }
 
+export class InvalidCredentialsError extends UnauthorizedError {
+  constructor() {
+    super({
+      message: 'Invalid credentials'
+    });
+  }
+}
+
 export class InvalidPasswordError extends UnauthorizedError {
   constructor() {
     super({
