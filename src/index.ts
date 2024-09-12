@@ -6,7 +6,7 @@ import express, { Application } from 'express';
 
 config({ path: '../.env' });
 
-import { ErrorMiddleware } from '#/middlewares/error-middleware';
+import { ErrorMiddleware } from '#/middlewares/error.middleware';
 import { prisma } from '#/providers/prisma.provider';
 import { CONFIG } from '#config';
 import { RouteNotFoundMiddleware } from '#/middlewares/route-not-found.middleware';
