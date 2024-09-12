@@ -1,15 +1,20 @@
 /* eslint-disable no-console */
 import { NextFunction, Request, Response } from 'express';
 
+import { Prisma } from '@prisma/client';
+import { CONFIG } from '#config';
 import {
+  AccessTokenExpiredError,
   ActivationCodeIncorrect,
   ActivationError,
   ActivationMaxAttemptsExceededError,
   ActivationRateLimitError,
-  ApiError
+  ApiError,
+  RouteNotFoundError,
+  InvalidCredentialsError,
+  InvalidPasswordError,
+  UserEmailNotFoundError
 } from '#/errors/api-error';
-import { Prisma } from '@prisma/client';
-import { CONFIG } from '#config';
 
 const isDatabaseError = (error: unknown): boolean => {
   return (
@@ -49,6 +54,19 @@ export function ErrorMiddleware(
         body.secondsUntilNextCode = error.secondsUntilNextCode;
         res.setHeader('Retry-After', error.secondsUntilNextCode.toString());
       }
+    } else if (error instanceof AccessTokenExpiredError) {
+      body.expiredAt = error.expiredAt.getTime();
+    } else if (
+      CONFIG.NODE_ENV === 'production' &&
+      (error instanceof InvalidPasswordError ||
+        error instanceof UserEmailNotFoundError)
+    ) {
+      const replacedError = new InvalidCredentialsError();
+      body.message = replacedError.message;
+      body.status = replacedError.status;
+      body.name = replacedError.name;
+    } else if (error instanceof RouteNotFoundError) {
+      body.url = error.url;
     }
   } else if (isDatabaseError(error)) {
     status = 500;
