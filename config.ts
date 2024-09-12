@@ -24,6 +24,8 @@ const configSchema = z.object({
   SMTP_USER: z.string(),
   SMTP_PASSWORD: z.string(),
 
+  IP_DATA_KEY: z.string(),
+
   NODE_ENV: z.enum(['development', 'production', 'test'])
 });
 
@@ -45,6 +47,8 @@ export const CONFIG: z.infer<typeof configSchema> = configSchema.parse({
   SMTP_PORT: process.env.SMTP_PORT,
   SMTP_USER: process.env.SMTP_USER,
   SMTP_PASSWORD: process.env.SMTP_PASSWORD,
+
+  IP_DATA_KEY: process.env.IP_DATA_KEY,
 
   NODE_ENV: process.env.NODE_ENV
 });
