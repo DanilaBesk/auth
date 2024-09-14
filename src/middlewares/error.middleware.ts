@@ -11,9 +11,10 @@ import {
   ActivationRateLimitError,
   ApiError,
   RouteNotFoundError,
-  InvalidCredentialsError,
   InvalidPasswordError,
-  UserEmailNotFoundError
+  UserEmailNotFoundError,
+  InvalidUserCredentialsError,
+  UserIdNotFoundError
 } from '#/errors/api-error';
 
 const isDatabaseError = (error: unknown): boolean => {
@@ -59,9 +60,10 @@ export function ErrorMiddleware(
     } else if (
       CONFIG.NODE_ENV === 'production' &&
       (error instanceof InvalidPasswordError ||
-        error instanceof UserEmailNotFoundError)
+        error instanceof UserEmailNotFoundError ||
+        error instanceof UserIdNotFoundError)
     ) {
-      const replacedError = new InvalidCredentialsError();
+      const replacedError = new InvalidUserCredentialsError();
       body.message = replacedError.message;
       body.status = replacedError.status;
       body.name = replacedError.name;
