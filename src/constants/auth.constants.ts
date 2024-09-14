@@ -20,6 +20,8 @@ export const BCRYPT_SALT_ROUNDS = 10;
 export const ACCESS_TOKEN_EXPIRES_IN = 5 * 60;
 export const REFRESH_TOKEN_EXPIRES_IN = 14 * 24 * 60 * 60;
 
+export const REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS = 24;
+
 export const INITIAL_USER_ROLE = Role.USER;
 
 export const REFRESH_COOKIE_OPIONS: CookieOptions = {
