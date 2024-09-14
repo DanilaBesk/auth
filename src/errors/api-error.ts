@@ -1,4 +1,8 @@
-import { MAX_REFRESH_TOKENS_FOR_USER } from '#/constants/auth.constants';
+/* eslint-disable max-len */
+import {
+  MAX_REFRESH_TOKENS_FOR_USER,
+  REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS
+} from '#/constants/auth.constants';
 
 export class ApiError extends Error {
   status: number;
@@ -50,11 +54,29 @@ export class RefreshSessionNotFoundOrExpiredError extends UnauthorizedError {
     });
   }
 }
-export class RefreshSessionInvalidError extends UnauthorizedError {
+export class RefreshSessionInvalidFingerprintError extends UnauthorizedError {
   constructor() {
     super({
       message: 'Invalid session. Wrong fingerprint'
     });
+  }
+}
+export class RefreshSessionInvalidTokenError extends UnauthorizedError {
+  constructor() {
+    super({
+      message: 'Invalid session. Wrong refresh token'
+    });
+  }
+}
+export class RefreshSessionCancellationTimeoutNotReachedError extends ApiError {
+  createdAt: Date;
+
+  constructor({ createdAt }: { createdAt: Date }) {
+    super({
+      status: 403,
+      message: `You cannot cancel the session until the required ${REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS}-hour period has elapsed`
+    });
+    this.createdAt = createdAt;
   }
 }
 
@@ -67,7 +89,7 @@ export class MaxRefreshSessionsExceededError extends ApiError {
   }
 }
 
-export class InvalidCredentialsError extends UnauthorizedError {
+export class InvalidUserCredentialsError extends UnauthorizedError {
   constructor() {
     super({
       message: 'Invalid credentials'
