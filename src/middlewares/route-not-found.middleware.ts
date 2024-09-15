@@ -1,5 +1,5 @@
+import { RouteNotFoundError } from '#/errors/classes.errors';
 import { NextFunction, Request, Response } from 'express';
-import { RouteNotFoundError } from '#/errors/api-error';
 
 export function RouteNotFoundMiddleware(
   req: Request,

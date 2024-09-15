@@ -1,7 +1,7 @@
 import { Request } from 'express';
 import { z } from 'zod';
 
-import { ValidationError } from '#/errors/api-error';
+import { ValidationError } from '#/errors/classes.errors';
 
 export const validateRequestData = async <T extends z.AnyZodObject>({
   schema,

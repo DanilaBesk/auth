@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { InvalidTokenPayloadError } from '#/errors/api-error';
+import { InvalidTokenPayloadError } from '#/errors/classes.errors';
 import { TTokenType } from '#/types/token.types';
 
 export const validateTokenPayload = async <T extends z.AnyZodObject>({

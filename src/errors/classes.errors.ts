@@ -6,6 +6,12 @@ import {
 import { TTokenType } from '#/types/token.types';
 import { capitalizeFirstLetter } from '#/utils/string.utility';
 
+export class UnexpectedError extends Error {
+  constructor({ message, cause }: { message: string; cause?: unknown }) {
+    super(message, { cause });
+    this.name = this.constructor.name;
+  }
+}
 export class ApiError extends Error {
   status: number;
 
