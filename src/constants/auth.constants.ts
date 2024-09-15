@@ -1,6 +1,6 @@
 import { CookieOptions } from 'express';
-import { CONFIG } from '#config';
 import { Role } from '@prisma/client';
+import { CONFIG } from '#config';
 
 export const MAX_REFRESH_TOKENS_FOR_USER = 5;
 export const MIN_PASSWORD_LENGTH = 8;
@@ -19,6 +19,8 @@ export const BCRYPT_SALT_ROUNDS = 10;
 
 export const ACCESS_TOKEN_EXPIRES_IN = 5 * 60;
 export const REFRESH_TOKEN_EXPIRES_IN = 14 * 24 * 60 * 60;
+
+export const JWT_SIGNING_ALGORITHM = 'HS512';
 
 export const REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS = 24;
 
