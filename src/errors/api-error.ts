@@ -3,6 +3,8 @@ import {
   MAX_REFRESH_TOKENS_FOR_USER,
   REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS
 } from '#/constants/auth.constants';
+import { TTokenType } from '#/types/token.types';
+import { capitalizeFirstLetter } from '#/utils/string.utility';
 
 export class ApiError extends Error {
   status: number;
@@ -32,18 +34,37 @@ export class UnauthorizedError extends ApiError {
     super({ status: 401, message });
   }
 }
-export class AccessTokenExpiredError extends ApiError {
+export class TokenExpiredError extends ApiError {
   expiredAt: Date;
 
-  constructor({ expiredAt }: { expiredAt: Date }) {
-    super({ message: 'Access token expired', status: 419 });
+  constructor({
+    tokenType,
+    expiredAt
+  }: {
+    tokenType: TTokenType;
+    expiredAt: Date;
+  }) {
+    super({
+      message: `${capitalizeFirstLetter(tokenType)} token expired`,
+      status: 419
+    });
     this.expiredAt = expiredAt;
   }
 }
 
-export class AccessTokenVerifyError extends UnauthorizedError {
-  constructor() {
-    super({ message: 'Access token verify error' });
+export class TokenVerifyError extends UnauthorizedError {
+  constructor({ tokenType }: { tokenType: TTokenType }) {
+    super({
+      message: `${capitalizeFirstLetter(tokenType)} token verify error`
+    });
+  }
+}
+
+export class InvalidTokenPayloadError extends UnauthorizedError {
+  constructor({ tokenType }: { tokenType: TTokenType }) {
+    super({
+      message: `Invalid ${capitalizeFirstLetter(tokenType)} token payload`
+    });
   }
 }
 
