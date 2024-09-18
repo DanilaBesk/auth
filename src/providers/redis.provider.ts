@@ -2,6 +2,9 @@
 import { createClient } from 'redis';
 import { CONFIG } from '#config';
 
-export const redis = await createClient({ url: CONFIG.REDIS_URI })
+export const redis = await createClient({
+  url: CONFIG.REDIS_URL,
+  socket: { tls: true }
+})
   .on('error', (err) => console.log('Redis Client Error', err))
   .connect();

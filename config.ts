@@ -1,4 +1,7 @@
 import { z } from 'zod';
+import { config } from 'dotenv';
+
+config();
 
 const portSchema = z.preprocess(
   (data) => parseInt(String(data), 10),
@@ -18,7 +21,7 @@ const configSchema = z.object({
   APP_HOST: z.string(),
   APP_PORT: portSchema,
 
-  REDIS_URI: z.string(),
+  REDIS_URL: z.string(),
 
   SMTP_HOST: z.string(),
   SMTP_PORT: portSchema,
@@ -43,7 +46,7 @@ export const CONFIG: z.infer<typeof configSchema> = configSchema.parse({
   APP_HOST: process.env.APP_HOST,
   APP_PORT: process.env.APP_PORT,
 
-  REDIS_URI: process.env.REDIS_URL,
+  REDIS_URL: process.env.REDIS_URL,
 
   SMTP_HOST: process.env.SMTP_HOST,
   SMTP_PORT: process.env.SMTP_PORT,
