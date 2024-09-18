@@ -1,42 +1,28 @@
-import {
-  LoginSchema,
-  LogoutSchema,
-  RefreshTokensSchema,
-  RegistrationSchema,
-  CreateActivationRecordSchema
-} from '#/schemas/user.schemas';
-import { FlattenSchemaTypes } from '#/types/zod-utils.types';
-import { User } from '@prisma/client';
 import { z } from 'zod';
+import { User } from '@prisma/client';
 
-export type TGetUserById = Pick<User, 'id'>;
+import { CreateActivationRecordSchema } from '#/schemas/user.schemas';
+import { TRegistration } from '#/types/auth.types';
 
-export type TCreateUser = Pick<
-  FlattenSchemaTypes<typeof RegistrationSchema>,
-  'email' | 'password'
->;
+export type TGetUserActivationKey = Pick<User, 'email'>;
 
-type TRegistrationSchema = z.infer<typeof RegistrationSchema>;
-export type TRegistration = TRegistrationSchema['body'] & {
-  ip: TRegistrationSchema['ip'];
-  ua: TRegistrationSchema['headers']['user-agent'];
+export type TCreateUser = Pick<User, 'email' | 'password' | 'role'>;
+
+export type TFindUserByEmail = Pick<User, 'email'>;
+
+export type TFindUserById = Pick<User, 'id'>;
+
+export type TActivationRecord = {
+  code: string;
+  attempts: number;
+  createdAt: number;
 };
 
-type TLoginSchema = z.infer<typeof LoginSchema>;
-export type TLogin = TLoginSchema['body'] & {
-  ip: TLoginSchema['ip'];
-  ua: TLoginSchema['headers']['user-agent'];
-};
-
-export type TLogout = FlattenSchemaTypes<typeof LogoutSchema>;
-
-type TRefreshTokenSchema = z.infer<typeof RefreshTokensSchema>;
-export type TRefreshTokens = TRefreshTokenSchema['body'] &
-  TRefreshTokenSchema['cookie'] & {
-    ip: TRefreshTokenSchema['ip'];
-    ua: TRefreshTokenSchema['headers']['user-agent'];
-  };
-
-export type TCreateActivationRecord = FlattenSchemaTypes<
+type TCreateActivationRecordSchema = z.infer<
   typeof CreateActivationRecordSchema
 >;
+export type TCreateActivationRecord = {
+  ip: TCreateActivationRecordSchema['ip'];
+} & TCreateActivationRecordSchema['body'];
+
+export type TVerifyActivationCode = Pick<TRegistration, 'email' | 'code'>;
