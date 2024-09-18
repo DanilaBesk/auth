@@ -1,4 +1,4 @@
-export const getActivationCodeText = (code: number): string => `
+export const getActivationCodeText = (code: string): string => `
 Здравствуйте!
 
 Благодарим вас за использование нашего сервиса. Для завершения регистрации, пожалуйста, введите следующий код активации:

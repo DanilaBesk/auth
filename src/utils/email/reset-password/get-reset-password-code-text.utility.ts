@@ -1,4 +1,4 @@
-export const getResetPasswordCodeText = (code: number): string => `
+export const getResetPasswordCodeText = (code: string): string => `
 Здравствуйте!
 
 Вы получили это письмо, потому что запросили сброс пароля на нашем сайте.

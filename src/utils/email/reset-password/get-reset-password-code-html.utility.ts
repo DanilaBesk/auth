@@ -1,4 +1,4 @@
-export const getResetPasswordCodeHtml = (code: number) => `<!doctype html>
+export const getResetPasswordCodeHtml = (code: string) => `<!doctype html>
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
@@ -34,9 +34,7 @@ export const getResetPasswordCodeHtml = (code: number) => `<!doctype html>
       .code {
         font-size: 24px;
         font-weight: bold;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        text-align: center;
         padding: 15px;
         border: 2px solid #007bff;
         border-radius: 8px;

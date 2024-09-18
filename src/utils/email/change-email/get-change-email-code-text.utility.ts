@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-export const getChangeEmailText = (code: number, newEmail: string): string => `
+export const getChangeEmailText = (code: string, newEmail: string): string => `
 Здравствуйте!
 
 Вы получили это письмо, потому что запросили обновление электронной почты на нашем сайте.

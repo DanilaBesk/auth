@@ -1,6 +1,6 @@
 /* eslint-disable max-len */
 export const getChangeEmailHtml = (
-  code: number,
+  code: string,
   newEmail: string
 ) => `<!doctype html>
 <html lang="ru">
@@ -51,9 +51,7 @@ export const getChangeEmailHtml = (
       .code {
         font-size: 24px;
         font-weight: bold;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        text-align: center;
         padding: 15px;
         border: 2px solid #007bff;
         border-radius: 8px;
