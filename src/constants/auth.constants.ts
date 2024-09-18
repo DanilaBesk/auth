@@ -32,6 +32,5 @@ export const REFRESH_COOKIE_OPIONS: CookieOptions = {
   domain: CONFIG.CLIENT_URL,
   secure: false, //TODO: chage to true
   httpOnly: true,
-  sameSite: 'strict',
-  signed: true
+  sameSite: 'strict'
 };
