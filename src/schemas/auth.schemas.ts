@@ -1,30 +1,23 @@
 import { z } from 'zod';
 
-import { ACTIVATION_CODE, EMAIL, PASSWORD } from '#/schemas/user.schemas';
+import {
+  ACTIVATION_CODE,
+  AUTHORIZATION_HEADER_ACCESS_TOKEN,
+  EMAIL,
+  FINGERPRINT,
+  IP,
+  PASSWORD,
+  USER_AGENT_HEADER
+} from '#/schemas/user.schemas';
 import { createValidationOptions } from '#/schemas/utils/create-validation-options.utility';
 
-export const AUTHORIZATION_HEADER_ACCESS_TOKEN = z
-  .string(createValidationOptions('header authorization', 'string'))
-  .refine((header) => {
-    const [scheme, token] = header.split(' ');
-    return scheme === 'Bearer' && !!token;
-  }, 'Invalid authorization header. Expected format: Bearer <token>');
-
-export const USER_AGENT_HEADER = z.string(
-  createValidationOptions('user-agent', 'string')
+export const REFRESH_TOKEN = z.string(
+  createValidationOptions('refresh token', 'string')
 );
 
-export const REFRESH_TOKEN = z
-  .string(createValidationOptions('refresh token', 'string'))
-  .uuid('Invalid refresh token');
-
-export const FINGERPRINT = z.string(
-  createValidationOptions('fingerprint', 'string')
-);
-
-export const IP = z
-  .string(createValidationOptions('ip', 'string'))
-  .ip('Invalid ip');
+export const REFRESH_SESSION_ID = z
+  .string(createValidationOptions('refresh session', 'string'))
+  .uuid('Invalid refreshSessionId');
 
 export const RegistrationSchema = z.object({
   body: z.object({
@@ -54,37 +47,30 @@ export const LoginSchema = z.object({
 // TODO: Реализация логаута сессий через ссылку в электронном письме
 
 export const LogoutSchema = z.object({
-  signedCookies: z.object({
-    refreshToken: REFRESH_TOKEN
-  }),
   headers: z.object({
     authorization: AUTHORIZATION_HEADER_ACCESS_TOKEN
   })
 });
 
-export const LogoutAllSessionsSchema = z.object({
+export const LogoutAllSchema = z.object({
   headers: z.object({
     authorization: AUTHORIZATION_HEADER_ACCESS_TOKEN
   })
 });
 
-export const LogoutAllSessionsExceptCurrentSchema = z.object({
-  signedCookies: z.object({
-    refreshToken: REFRESH_TOKEN
-  }),
+export const LogoutAllExceptCurrentSchema = z.object({
   headers: z.object({
     authorization: AUTHORIZATION_HEADER_ACCESS_TOKEN
   })
 });
 
 export const RefreshTokensSchema = z.object({
-  signedCookies: z.object({
+  cookies: z.object({
     refreshToken: REFRESH_TOKEN
   }),
   ip: IP,
   headers: z.object({
-    'user-agent': USER_AGENT_HEADER,
-    authorization: AUTHORIZATION_HEADER_ACCESS_TOKEN
+    'user-agent': USER_AGENT_HEADER
   }),
   body: z.object({
     fingerprint: FINGERPRINT
