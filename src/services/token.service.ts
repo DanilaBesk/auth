@@ -1,187 +1,283 @@
 import * as jwt from 'jsonwebtoken';
-import { CONFIG } from '#config';
+import { z } from 'zod';
 import { v4 as uuid } from 'uuid';
+
+import { CONFIG } from '#config';
 import {
   ACCESS_TOKEN_EXPIRES_IN,
-  MAX_REFRESH_TOKENS_FOR_USER,
+  JWT_SIGNING_ALGORITHM,
   REFRESH_TOKEN_EXPIRES_IN
 } from '#/constants/auth.constants';
 import {
-  TAccessPayload,
-  TAddRefreshSession,
-  TGetRefreshSession,
-  TMakeAccessToken,
-  TRefreshSession,
-  TRemoveRefreshSession,
-  TUserId,
-  TVerifyRefreshSession
-} from '#/types/token.types';
-import { redis } from '#/providers/redis.provider';
+  InvalidTokenPayloadError,
+  TokenExpiredError,
+  TokenVerifyError,
+  UnexpectedError
+} from '#/errors/classes.errors';
+import { redis } from '#/providers';
 import {
-  AccessTokenExpiredError,
-  AccessTokenVerifyError,
-  MaxRefreshSessionsExceededError,
-  RefreshSessionInvalidError,
-  RefreshSessionNotFoundOrExpiredError
-} from '#/errors/api-error';
+  TAddRefreshSession,
+  TDeleteAllUserRefreshSessions,
+  TDeleteRefreshSession,
+  TGetAllUserRefreshSessions,
+  TGetRefreshSession,
+  TGetRefreshSessionKey,
+  TGetUserRefreshSessionsCount,
+  TJwtDecode,
+  TJwtSign,
+  TJwtVerify,
+  TMakeAccessToken,
+  TMakeRefreshTokenData,
+  TRefreshSession,
+  TValidateTokenPayload,
+  TVerifyAccessToken,
+  TVerifyRefreshToken
+} from '#/types/token.types';
+import {
+  AccessTokenPayloadSchema,
+  RefreshTokenPayloadSchema
+} from '#/schemas/token.schemas';
 
 export class TokenService {
-  private static jwtVerify(
-    token: string,
-    SECRET: jwt.Secret
-  ): Promise<jwt.JwtPayload> {
+  private static async validateTokenPayload<T extends z.AnyZodObject>({
+    schema,
+    payload,
+    tokenType
+  }: TValidateTokenPayload<T>): Promise<z.infer<T>> {
+    const result = await schema.safeParseAsync(payload);
+
+    if (!result.success) {
+      throw new InvalidTokenPayloadError({ tokenType });
+    }
+
+    return result.data;
+  }
+
+  private static jwtSign({
+    payload,
+    secret,
+    expiresIn,
+    subject
+  }: TJwtSign): Promise<string> {
     return new Promise((resolve, reject) => {
-      jwt.verify(token, SECRET, (error, decoded) => {
+      jwt.sign(
+        payload,
+        secret,
+        { algorithm: JWT_SIGNING_ALGORITHM, subject, expiresIn },
+        (error, token) => {
+          if (error) {
+            return reject(new UnexpectedError(error));
+          }
+          if (token === undefined) {
+            return reject(
+              new UnexpectedError({
+                message: 'Token is undefined'
+              })
+            );
+          }
+          return resolve(token);
+        }
+      );
+    });
+  }
+
+  private static jwtVerify<T extends z.AnyZodObject>({
+    tokenType,
+    token,
+    schema,
+    secret
+  }: TJwtVerify<T>): Promise<{
+    header: jwt.JwtHeader;
+    payload: z.infer<T>;
+    signature: string;
+  }> {
+    return new Promise((resolve, reject) => {
+      jwt.verify(token, secret, { complete: true }, (error, decoded) => {
         if (error) {
           if (error instanceof jwt.JsonWebTokenError) {
             if (error instanceof jwt.TokenExpiredError) {
               reject(
-                new AccessTokenExpiredError({ expiredAt: error.expiredAt })
+                new TokenExpiredError({ tokenType, expiredAt: error.expiredAt })
               );
             }
-            reject(new AccessTokenVerifyError());
+            reject(new TokenVerifyError({ tokenType }));
           }
-          reject(error);
+          reject(new UnexpectedError(error));
         }
-        if (typeof decoded === 'string') {
+        if (!decoded) {
           return reject(
-            new Error('Type of decoded token is string, expected: JwtPayload')
+            new UnexpectedError({
+              message: 'Decoded token is undefined'
+            })
           );
         }
-        if (decoded === undefined) {
-          return reject(new Error('Decoded token is undefined'));
-        }
-        return resolve(decoded);
+        const payload = this.validateTokenPayload({
+          schema,
+          payload: decoded.payload,
+          tokenType
+        });
+
+        return resolve({ ...decoded, payload });
       });
     });
   }
 
-  private static jwtSign(
-    payload: jwt.JwtPayload,
-    SECRET: jwt.Secret,
-    options: jwt.SignOptions
-  ): Promise<string> {
-    return new Promise((resolve, reject) => {
-      jwt.sign(payload, SECRET, options, (error, token) => {
-        if (error) {
-          return reject(error);
-        }
-        if (token === undefined) {
-          return reject(new Error('Token is undefined'));
-        }
-        return resolve(token);
-      });
-    });
+  private static jwtDecode({ token }: TJwtDecode) {
+    const decoded = jwt.decode(token, { complete: true });
+    if (!decoded) {
+      throw new UnexpectedError({ message: 'Token has not been decoded' });
+    }
+    return decoded;
   }
 
-  private static getRefreshSesionsKey(userId: TUserId) {
+  private static getRefreshSesionsKey({ userId }: TGetRefreshSessionKey) {
     return `refresh:${userId}`;
   }
 
-  static async makeAccessToken({ email, id, role }: TMakeAccessToken) {
-    const payload = {
-      email,
-      role
-    };
-    const options: jwt.SignOptions = {
-      algorithm: 'HS512',
-      expiresIn: ACCESS_TOKEN_EXPIRES_IN,
-      subject: id
-    };
-
-    return await this.jwtSign(payload, CONFIG.JWT_ACCESS_SECRET, options);
-  }
-
-  static makeRefreshUUID() {
+  private static generateRefreshSessionId() {
     return uuid();
   }
 
-  static async getRefreshSession({ refreshUUID, userId }: TGetRefreshSession) {
-    const refreshSessionsKey = this.getRefreshSesionsKey(userId);
+  static async makeAccessToken({
+    userId,
+    refreshSessionId,
+    email,
+    role
+  }: TMakeAccessToken) {
+    const payload = {
+      refreshSessionId,
+      email,
+      role
+    };
 
-    const record = await redis.hget(refreshSessionsKey, refreshUUID);
+    return await this.jwtSign({
+      payload,
+      secret: CONFIG.JWT_ACCESS_SECRET,
+      subject: userId,
+      expiresIn: ACCESS_TOKEN_EXPIRES_IN
+    });
+  }
 
-    if (record !== null) {
+  static async makeRefreshTokenData({ userId }: TMakeRefreshTokenData) {
+    const refreshSessionId = this.generateRefreshSessionId();
+
+    const payload = {
+      refreshSessionId
+    };
+
+    const refreshToken = await this.jwtSign({
+      payload,
+      secret: CONFIG.JWT_REFRESH_SECRET,
+      expiresIn: REFRESH_TOKEN_EXPIRES_IN,
+      subject: userId
+    });
+    const tokenSignature = this.jwtDecode({ token: refreshToken }).signature;
+
+    return { refreshSessionId, refreshToken, tokenSignature };
+  }
+
+  static async addRefreshSession({
+    userId,
+    refreshSessionId,
+    tokenSignature,
+    ua,
+    ip,
+    fingerprint
+  }: TAddRefreshSession) {
+    const refreshSessionsKey = this.getRefreshSesionsKey({ userId });
+
+    const refreshRecord: TRefreshSession = {
+      tokenSignature,
+      ip,
+      ua,
+      fingerprint,
+      createdAt: Date.now()
+    };
+
+    await redis.hSet(
+      refreshSessionsKey,
+      refreshSessionId,
+      JSON.stringify(refreshRecord)
+    );
+    redis.hExpire(
+      refreshSessionsKey,
+      refreshSessionId,
+      REFRESH_TOKEN_EXPIRES_IN
+    );
+    // установка ttl для всего ключа, ведь время жизни всего ключа такое же, как и у последней добавленной сессии
+    redis.expire(refreshSessionsKey, REFRESH_TOKEN_EXPIRES_IN);
+  }
+
+  static async getRefreshSession({
+    userId,
+    refreshSessionId
+  }: TGetRefreshSession) {
+    const refreshSessionsKey = this.getRefreshSesionsKey({ userId });
+
+    const record = await redis.hGet(refreshSessionsKey, refreshSessionId);
+
+    if (record !== undefined) {
       return JSON.parse(record) as TRefreshSession;
     }
     return record;
   }
 
-  static verifyRefreshSession({
-    oldRefreshSession,
-    newFingerprint
-  }: TVerifyRefreshSession) {
-    const now = Date.now();
-
-    if (now >= oldRefreshSession.expiresAt) {
-      throw new RefreshSessionNotFoundOrExpiredError();
-    }
-    if (oldRefreshSession.fingerprint !== newFingerprint) {
-      throw new RefreshSessionInvalidError();
-    }
-  }
-
-  static async addRefreshSession({
-    refreshUUID,
-    userId,
-    ua,
-    ip,
-    fingerprint
-  }: TAddRefreshSession) {
-    const refreshSessionsKey = this.getRefreshSesionsKey(userId);
-
-    const refreshSessionsStr = await redis.hgetall(refreshSessionsKey);
-
-    // Так как в ioredis нет функции HEXPIRE, то в каждом запросе на добавление необходимо удалять истекшие сессии
-    // Для того, чтобы знать сколько активных сессий у пользователя
-    const now = Date.now();
-    const promises: Promise<any>[] = [];
-    let countRefreshSessions = 0;
-
-    for (const key in refreshSessionsStr) {
-      if (
-        now >=
-        (JSON.parse(refreshSessionsStr[key]) as TRefreshSession).expiresAt
-      ) {
-        promises.push(redis.del(refreshSessionsKey, key));
-      } else countRefreshSessions++;
-    }
-    await Promise.allSettled(promises);
-
-    if (countRefreshSessions >= MAX_REFRESH_TOKENS_FOR_USER) {
-      throw new MaxRefreshSessionsExceededError();
-    }
-
-    const refreshRecord = {
-      ip,
-      ua,
-      fingerprint,
-      expiresAt: Date.now() + REFRESH_TOKEN_EXPIRES_IN * 1000
-    };
-
-    await redis.hset(
-      refreshSessionsKey,
-      refreshUUID,
-      JSON.stringify(refreshRecord)
-    );
-    // установка ttl для всего ключа, ведь время жизни всего ключа такое же, как и у последней добавленной сессии
-    redis.expire(refreshSessionsKey, REFRESH_TOKEN_EXPIRES_IN);
-  }
-  static async removeRefreshSession({
-    refreshUUID,
+  static async getAllUserRefreshSessions({
     userId
-  }: TRemoveRefreshSession) {
-    const refreshSessionsKey = this.getRefreshSesionsKey(userId);
+  }: TGetAllUserRefreshSessions) {
+    const refreshSessionsKey = this.getRefreshSesionsKey({ userId });
 
-    await redis.hdel(refreshSessionsKey, refreshUUID);
+    const refreshSessionsStr = await redis.hGetAll(refreshSessionsKey);
+
+    const refreshSessions = Object.entries(refreshSessionsStr).reduce<
+      Record<string, TRefreshSession>
+    >((acc, [key, value]) => {
+      acc[key] = JSON.parse(value) as TRefreshSession;
+      return acc;
+    }, {});
+
+    return refreshSessions;
   }
 
-  static async verifyAccessToken(token: string) {
-    const userData = (await this.jwtVerify(
-      token,
-      CONFIG.JWT_ACCESS_SECRET
-    )) as TAccessPayload;
+  static async getUserRefreshSessionsCount({
+    userId
+  }: TGetUserRefreshSessionsCount) {
+    const refreshSessionsKey = this.getRefreshSesionsKey({ userId });
 
-    return userData;
+    return await redis.hLen(refreshSessionsKey);
+  }
+
+  static async deleteRefreshSession({
+    userId,
+    refreshSessionId
+  }: TDeleteRefreshSession) {
+    const refreshSessionsKey = this.getRefreshSesionsKey({ userId });
+
+    await redis.hDel(refreshSessionsKey, refreshSessionId);
+  }
+
+  static async deleteAllUserRefreshSessions({
+    userId
+  }: TDeleteAllUserRefreshSessions) {
+    const refreshSessionsKey = this.getRefreshSesionsKey({ userId });
+
+    await redis.del(refreshSessionsKey);
+  }
+
+  static async verifyRefreshToken({ refreshToken }: TVerifyRefreshToken) {
+    return await this.jwtVerify({
+      token: refreshToken,
+      secret: CONFIG.JWT_REFRESH_SECRET,
+      schema: RefreshTokenPayloadSchema,
+      tokenType: 'refresh'
+    });
+  }
+  static async verifyAccessToken({ accessToken }: TVerifyAccessToken) {
+    return await this.jwtVerify({
+      token: accessToken,
+      secret: CONFIG.JWT_ACCESS_SECRET,
+      schema: AccessTokenPayloadSchema,
+      tokenType: 'access'
+    });
   }
 }
