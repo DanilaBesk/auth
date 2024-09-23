@@ -2,12 +2,14 @@ import { z } from 'zod';
 import { Role } from '@prisma/client';
 
 import {
-  ACTIVATION_CODE_LENGTH,
-  CHANGE_EMAIL_CODE_LENGTH,
-  CHANGE_PASSWORD_CODE_LENGTH,
   MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH
 } from '#/constants/auth.constants';
+import {
+  ACTIVATION_CODE_LENGTH,
+  CHANGE_EMAIL_CODE_LENGTH,
+  CHANGE_PASSWORD_CODE_LENGTH
+} from '#/constants/user.constants';
 import { createValidationOptions } from '#/schemas/utils/create-validation-options.utility';
 
 export const USER_ID = z
