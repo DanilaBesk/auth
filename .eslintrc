@@ -36,10 +36,8 @@
     "space-unary-ops": "error",
     "quotes": ["error", "single"],
     //
-    "max-len": ["error", { "code": 120 }],
     "max-lines": ["error", { "max": 300 }],
     "keyword-spacing": "error",
-    "multiline-ternary": ["error", "never"],
     //
     "no-multiple-empty-lines": ["error", { "max": 2, "maxEOF": 1 }],
     "no-whitespace-before-property": "error",
