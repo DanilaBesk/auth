@@ -8,7 +8,7 @@ export const getIpDataHtml = ({
   time
 }: {
   ip: string;
-  ipData: TIpdata;
+  ipData: TIpdata | null;
   time: Date;
 }) => {
   const locationInfo = getLocationInfo(ipData);
@@ -26,7 +26,7 @@ export const getIpDataText = ({
   time
 }: {
   ip: string;
-  ipData: TIpdata;
+  ipData: TIpdata | null;
   time: Date;
 }) => {
   const locationInfo = getLocationInfo(ipData);
