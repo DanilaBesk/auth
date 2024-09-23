@@ -1,14 +1,23 @@
 import { CONFIG } from '#config';
 import { mailTransporter } from '#/providers';
+import { UnexpectedError } from '#/errors/classes.errors';
+import {
+  TSendActivationCode,
+  TSendChangeEmailCode,
+  TSendResetPasswordCode
+} from '#/types/mail.types';
 import {
   getActivationCodeHtml,
-  getActivationCodeText,
-  getChangeEmailHtml,
-  getChangeEmailText,
+  getActivationCodeText
+} from '#/templates/get-activation-code.template';
+import {
   getResetPasswordCodeHtml,
   getResetPasswordCodeText
-} from '#/utils/email';
-import { UnexpectedError } from '#/errors/classes.errors';
+} from '#/templates/get-reset-password-code.template';
+import {
+  getChangeEmailCodeHtml,
+  getChangeEmailCodeText
+} from '#/templates/get-change-email-code.template';
 
 export class MailService {
   private static sendMail(options: {
@@ -27,31 +36,81 @@ export class MailService {
       });
     });
   }
-  static async sendActivationCode(toEmail: string, code: string) {
+  static async sendActivationCode({
+    toEmail,
+    code,
+    requestIp,
+    requestIpData,
+    requestTime
+  }: TSendActivationCode) {
     await this.sendMail({
       from: CONFIG.SMTP_USER,
       to: toEmail,
       subject: 'Активация аккаунта',
-      html: getActivationCodeHtml(code),
-      text: getActivationCodeText(code)
+      html: getActivationCodeHtml({
+        requestIp,
+        requestIpData,
+        requestTime,
+        code
+      }),
+      text: getActivationCodeText({
+        requestIp,
+        requestIpData,
+        requestTime,
+        code
+      })
     });
   }
-  static async sendResetPasswordCode(toEmail: string, code: string) {
+  static async sendResetPasswordCode({
+    toEmail,
+    code,
+    requestIp,
+    requestIpData,
+    requestTime
+  }: TSendResetPasswordCode) {
     await this.sendMail({
       from: CONFIG.SMTP_USER,
       to: toEmail,
       subject: 'Сброс пароля',
-      html: getResetPasswordCodeHtml(code),
-      text: getResetPasswordCodeText(code)
+      html: getResetPasswordCodeHtml({
+        requestIp,
+        requestIpData,
+        requestTime,
+        code
+      }),
+      text: getResetPasswordCodeText({
+        requestIp,
+        requestIpData,
+        requestTime,
+        code
+      })
     });
   }
-  static async sendChangeEmailCode(toEmail: string, code: string) {
+  static async sendChangeEmailCode({
+    toEmail,
+    code,
+    requestIp,
+    requestIpData,
+    requestTime
+  }: TSendChangeEmailCode) {
     await this.sendMail({
       from: CONFIG.SMTP_USER,
       to: toEmail,
       subject: 'Изменение почты',
-      html: getChangeEmailHtml(code, toEmail),
-      text: getChangeEmailText(code, toEmail)
+      html: getChangeEmailCodeHtml({
+        requestIp,
+        requestIpData,
+        requestTime,
+        toEmail,
+        code
+      }),
+      text: getChangeEmailCodeText({
+        requestIp,
+        requestIpData,
+        requestTime,
+        toEmail,
+        code
+      })
     });
   }
 }
