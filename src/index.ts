@@ -42,14 +42,24 @@ const start = async () => {
       );
     });
   } catch (error) {
-    console.error(error);
+    console.error('Start server error: ', error);
   }
 };
 
 const handleProcessCompletion = async () => {
-  await prisma.$disconnect();
-  await redis.quit();
-  process.exit(0);
+  try {
+    console.log('Closing the connections...');
+
+    await prisma.$disconnect();
+    console.log('Prisma disconnected.');
+
+    await redis.quit();
+    console.log('Redis connection closed.');
+  } catch (error) {
+    console.error('Error while closing connections:', error);
+  } finally {
+    process.exit(0);
+  }
 };
 
 process.on('SIGINT', handleProcessCompletion);
