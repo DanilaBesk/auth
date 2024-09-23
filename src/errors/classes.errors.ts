@@ -4,7 +4,7 @@ import {
   REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS
 } from '#/constants/auth.constants';
 import { TTokenType } from '#/types/token.types';
-import { capitalizeFirstLetter } from '#/utils/string.utility';
+import { capitalizeFirstLetter } from '#/utils/capitalize-first-letter.utility';
 
 export class UnexpectedError extends Error {
   constructor({ message, cause }: { message: string; cause?: unknown }) {
@@ -88,7 +88,7 @@ export class RefreshSessionInvalidFingerprintError extends UnauthorizedError {
     });
   }
 }
-export class RefreshSessionInvalidTokenError extends UnauthorizedError {
+export class RefreshSessionInvalidSignatureError extends UnauthorizedError {
   constructor() {
     super({
       message: 'Invalid session. Wrong refresh token'
@@ -161,13 +161,15 @@ export class UserIdNotFoundError extends ApiError {
 
 export class RouteNotFoundError extends ApiError {
   url: string;
+  method: string;
 
-  constructor({ url }: { url: string }) {
+  constructor({ url, method }: { url: string; method: string }) {
     super({
       status: 404,
-      message: `Route '${url}' not found`
+      message: `Route '${url}' not found with method ${method}`
     });
     this.url = url;
+    this.method = method;
   }
 }
 

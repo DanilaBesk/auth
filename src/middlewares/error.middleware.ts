@@ -70,6 +70,7 @@ export function ErrorMiddleware(
       body.name = replacedError.name;
     } else if (error instanceof RouteNotFoundError) {
       body.url = error.url;
+      body.method = error.method;
     }
   } else if (error instanceof UnexpectedError || isDatabaseError(error)) {
     status = 500;
