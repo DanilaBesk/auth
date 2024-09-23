@@ -3,7 +3,7 @@ import { TIpdata } from '#/providers/ipdata.provider';
 type TSendMailCode = {
   toEmail: string;
   requestIp: string;
-  requestIpData: TIpdata;
+  requestIpData: TIpdata | null;
   requestTime: Date;
   code: string;
 };
