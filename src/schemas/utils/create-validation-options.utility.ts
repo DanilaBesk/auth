@@ -1,4 +1,4 @@
-import { capitalizeFirstLetter } from '#/utils/string.utility';
+import { capitalizeFirstLetter } from '#/utils/capitalize-first-letter.utility';
 
 export function createValidationOptions(
   fieldName: string,
