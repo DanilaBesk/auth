@@ -1,86 +1,117 @@
-import { BCRYPT_SALT_ROUNDS, DEFAULT_ROLE } from '#/constants/auth.constants';
-import { UserEmailConflictError } from '#/errors/api-error';
-import { prisma } from '#/providers/prisma.provider';
-import { TRegistration } from '#/types/user.types';
-import { hashSync } from 'bcrypt';
-import { Activation } from './activation.service';
-import { TokenService } from './token.service';
+import { redis, prisma, ipdata } from '#/providers';
+import { MailService } from '#/services/mail.service';
+import {
+  ACTIVATION_CODE_ATTEMPTS_LIMIT,
+  ACTIVATION_CODE_EXPIRE_IN,
+  ACTIVATION_CODE_REQUEST_INTERVAL_SECONDS
+} from '#/constants/user.constants';
+import {
+  ActivationCodeIncorrectError,
+  ActivationCodeNotFoundOrExpiredError,
+  ActivationMaxAttemptsExceededError,
+  ActivationRateLimitError
+} from '#/errors/classes.errors';
+import {
+  TActivationRecord,
+  TCreateActivationRecord,
+  TCreateUser,
+  TFindUserByEmail,
+  TFindUserById,
+  TGetUserActivationKey,
+  TVerifyActivationCode
+} from '#/types/user.types';
 
 export class UserService {
-  static async registration({
-    code,
-    email,
-    fingerprint,
-    password,
-    ua,
-    ip
-  }: TRegistration) {
-    const candidate = await prisma.user.findUnique({ where: { email } });
-    if (candidate) {
-      throw new UserEmailConflictError();
+  private static generateSixDigitCode() {
+    const random = Math.floor(Math.random() * 1000000);
+    return random.toString().padStart(6, '0');
+  }
+
+  private static getUserActivationKey({ email }: TGetUserActivationKey) {
+    return `activation:${email}`;
+  }
+  static async createUser({ email, password, role }: TCreateUser) {
+    return await prisma.user.create({
+      data: { email, password, role }
+    });
+  }
+
+  static async findUserByEmail({ email }: TFindUserByEmail) {
+    return await prisma.user.findUnique({ where: { email } });
+  }
+
+  static async findUserById({ id }: TFindUserById) {
+    return await prisma.user.findUnique({ where: { id } });
+  }
+
+  static async createActivationRecord({ email, ip }: TCreateActivationRecord) {
+    const userActivationKey = this.getUserActivationKey({ email });
+
+    const record = await redis.get(userActivationKey);
+
+    if (record) {
+      const { createdAt } = JSON.parse(record) as TActivationRecord;
+
+      const secondsSinceCreation = (Date.now() - createdAt) / 1000;
+
+      const secondsUntilNextCode =
+        ACTIVATION_CODE_REQUEST_INTERVAL_SECONDS - secondsSinceCreation;
+
+      if (secondsUntilNextCode > 0) {
+        throw new ActivationRateLimitError({ createdAt: new Date(createdAt) });
+      }
     }
 
-    await Activation.verifyActivationCode({ email, code });
-
-    const hashPassword = hashSync(password, BCRYPT_SALT_ROUNDS);
-    const user = await prisma.user.create({
-      data: { email, password: hashPassword, role: DEFAULT_ROLE }
-    });
-
-    const tokenPayload = {
-      email: user.email,
-      id: user.id,
-      role: user.role
+    const newRecord: TActivationRecord = {
+      code: this.generateSixDigitCode(),
+      attempts: ACTIVATION_CODE_ATTEMPTS_LIMIT,
+      createdAt: Date.now()
     };
 
-    const accessToken = TokenService.makeAccessToken(tokenPayload);
-    const refreshUUID = TokenService.makeRefreshUUID();
+    const requestTime = new Date();
 
-    await TokenService.saveRefreshToken({});
+    const [ipData] = await Promise.all([
+      ipdata.getIPData(ip),
+      redis.setEx(
+        userActivationKey,
+        ACTIVATION_CODE_EXPIRE_IN,
+        JSON.stringify(newRecord)
+      )
+    ]);
+
+    await MailService.sendActivationCode({
+      code: newRecord.code,
+      toEmail: email,
+      requestIp: ip,
+      requestIpData: ipData,
+      requestTime
+    });
+  }
+
+  static async verifyActivationCode({ email, code }: TVerifyActivationCode) {
+    const userActivationKey = this.getUserActivationKey({ email });
+
+    const record = await redis.get(userActivationKey);
+    if (!record) {
+      throw new ActivationCodeNotFoundOrExpiredError();
+    }
+
+    const recordData = JSON.parse(record) as TActivationRecord;
+
+    if (recordData.attempts <= 0) {
+      throw new ActivationMaxAttemptsExceededError();
+    }
+    if (code !== recordData.code) {
+      recordData.attempts -= 1;
+      await redis.set(userActivationKey, JSON.stringify(recordData), {
+        KEEPTTL: true
+      });
+
+      throw new ActivationCodeIncorrectError({
+        attemptsLeft: recordData.attempts
+      });
+    }
+
+    await redis.del(userActivationKey);
   }
 }
-
-// const tokens = tokenService.generateTokens({ ...userDto });
-// await tokenService.saveToken(userDto.id, tokens.refreshToken);
-
-// return {
-//   ...tokens,
-//   user: userDto
-// };
-
-// async login({ email, password }) {
-//   const user = await User.findOne({ email });
-//   if (!user) {
-//     throw ApiError.BadRequest(
-//       'Непредвиденная ошибка: пользователь не существует с таким email'
-//     );
-//   }
-//   const isPassEquals = await bcrypt.compare(password, user.password);
-//   if (!isPassEquals) {
-//     throw ApiError.BadRequest('Неверный пароль');
-//   }
-//   const userDto = new UserDto(user);
-//   const tokens = tokenService.generateTokens({ ...userDto });
-//   await tokenService.saveToken(user._id, tokens.refreshToken);
-
-//   return { ...tokens, user: userDto };
-// }
-
-// async logout(refreshToken) {
-//   await tokenService.removeToken(refreshToken);
-// }
-// async refresh(refreshToken) {
-//   if (!refreshToken) {
-//     throw ApiError.UnauthorizedError();
-//   }
-//   const userData = tokenService.validateRefreshToken(refreshToken);
-//   const tokenFromDb = await tokenService.findToken(refreshToken);
-//   if (!userData || !tokenFromDb) throw ApiError.UnauthorizedError();
-
-//   const user = await User.findById(userData.id);
-//   const userDto = new UserDto(user);
-//   const tokens = tokenService.generateTokens({ ...userDto });
-
-//   await tokenService.saveToken(userDto.id, tokens.refreshToken);
-//   return { ...tokens, user: userDto };
-// }
