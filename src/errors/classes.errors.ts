@@ -1,4 +1,3 @@
-/* eslint-disable max-len */
 import {
   MAX_REFRESH_TOKENS_FOR_USER,
   REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS
