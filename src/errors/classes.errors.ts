@@ -2,6 +2,7 @@ import {
   MAX_REFRESH_TOKENS_FOR_USER,
   REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS
 } from '#/constants/auth.constants';
+import { ACTIVATION_CODE_EXPIRE_IN } from '#/constants/user.constants';
 import { TTokenType } from '#/types/token.types';
 import { capitalizeFirstLetter } from '#/utils/capitalize-first-letter.utility';
 
@@ -83,26 +84,33 @@ export class RefreshSessionNotFoundOrExpiredError extends UnauthorizedError {
 export class RefreshSessionInvalidFingerprintError extends UnauthorizedError {
   constructor() {
     super({
-      message: 'Invalid session. Wrong fingerprint'
+      message: 'Invalid refresh session. Wrong fingerprint'
     });
   }
 }
 export class RefreshSessionInvalidSignatureError extends UnauthorizedError {
   constructor() {
     super({
-      message: 'Invalid session. Wrong refresh token'
+      message: 'Invalid refresh session. Wrong refresh token'
     });
   }
 }
 export class RefreshSessionCancellationTimeoutNotReachedError extends ApiError {
-  createdAt: Date;
+  allowedAt: Date;
 
   constructor({ createdAt }: { createdAt: Date }) {
     super({
       status: 403,
       message: `You cannot cancel the session until the required ${REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS}-hour period has elapsed`
     });
-    this.createdAt = createdAt;
+    this.allowedAt = this.calculateAllowedAt(createdAt);
+  }
+
+  private calculateAllowedAt(createdAt: Date) {
+    return new Date(
+      createdAt.getTime() +
+        REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS * 60 * 60 * 1000
+    );
   }
 }
 
@@ -186,25 +194,26 @@ export class ActivationError extends ApiError {
   }
 }
 export class ActivationMaxAttemptsExceededError extends ActivationError {
-  secondsUntilNextCode: number;
-
-  constructor({ secondsUntilNextCode }: { secondsUntilNextCode: number }) {
+  constructor() {
     super({
       status: 429,
-      message: `No attempts left. Please wait ${secondsUntilNextCode} seconds before requesting a new code`
+      message: 'No attempts left. Please request a new code'
     });
-    this.secondsUntilNextCode = secondsUntilNextCode;
   }
 }
 export class ActivationRateLimitError extends ActivationError {
-  secondsUntilNextCode: number;
+  allowedAt: Date;
 
-  constructor({ secondsUntilNextCode }: { secondsUntilNextCode: number }) {
+  constructor({ createdAt }: { createdAt: Date }) {
     super({
       status: 429,
-      message: `Please wait ${Math.ceil(secondsUntilNextCode)} seconds before requesting a new code`
+      message: 'Please wait before requesting a new code'
     });
-    this.secondsUntilNextCode = secondsUntilNextCode;
+    this.allowedAt = this.calculateAllowedAt(createdAt);
+  }
+
+  private calculateAllowedAt(createdAt: Date) {
+    return new Date(createdAt.getTime() + ACTIVATION_CODE_EXPIRE_IN * 1000);
   }
 }
 export class ActivationCodeNotFoundOrExpired extends ActivationError {

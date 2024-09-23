@@ -1,19 +1,21 @@
 /* eslint-disable no-console */
+
 import { NextFunction, Request, Response } from 'express';
 
 import {
   ActivationCodeIncorrect,
   ActivationError,
-  ActivationMaxAttemptsExceededError,
   ActivationRateLimitError,
   ApiError,
   InvalidPasswordError,
   InvalidUserCredentialsError,
+  RefreshSessionCancellationTimeoutNotReachedError,
   RouteNotFoundError,
   TokenExpiredError,
   UnexpectedError,
   UserEmailNotFoundError,
-  UserIdNotFoundError
+  UserIdNotFoundError,
+  ValidationError
 } from '#/errors/classes.errors';
 import { CONFIG } from '#config';
 import { Prisma } from '@prisma/client';
@@ -31,11 +33,11 @@ export function ErrorMiddleware(
   res: Response,
   next: NextFunction
 ) {
-  let status = 500;
-
+  const defaultStatus = 500;
   const defaultMessage = 'Something went wrong. Please try again later';
   const defaultName = 'InternalError';
 
+  let status = defaultStatus;
   const body: Record<string, string | number | string[]> = {
     name: defaultName,
     message: defaultMessage
@@ -45,19 +47,21 @@ export function ErrorMiddleware(
     status = error.status;
     body.message = error.message;
     body.name = error.name;
-
-    if (error instanceof ActivationError) {
+    if (error instanceof ValidationError) {
+      body.errors = error.errors;
+    } else if (error instanceof ActivationError) {
       if (error instanceof ActivationCodeIncorrect) {
         body.attemptsLeft = error.attemptsLeft;
-      } else if (
-        error instanceof ActivationRateLimitError ||
-        error instanceof ActivationMaxAttemptsExceededError
-      ) {
-        body.secondsUntilNextCode = error.secondsUntilNextCode;
-        res.setHeader('Retry-After', error.secondsUntilNextCode.toString());
+      } else if (error instanceof ActivationRateLimitError) {
+        body.allowedAt = error.allowedAt.getTime();
+        res.setHeader('Retry-After', error.allowedAt.toString());
       }
     } else if (error instanceof TokenExpiredError) {
       body.expiredAt = error.expiredAt.getTime();
+    } else if (
+      error instanceof RefreshSessionCancellationTimeoutNotReachedError
+    ) {
+      body.allowedAt = error.allowedAt.getTime();
     } else if (
       CONFIG.NODE_ENV === 'production' &&
       (error instanceof InvalidPasswordError ||
@@ -66,14 +70,14 @@ export function ErrorMiddleware(
     ) {
       const replacedError = new InvalidUserCredentialsError();
       body.message = replacedError.message;
-      body.status = replacedError.status;
+      status = replacedError.status;
       body.name = replacedError.name;
     } else if (error instanceof RouteNotFoundError) {
       body.url = error.url;
       body.method = error.method;
     }
   } else if (error instanceof UnexpectedError || isDatabaseError(error)) {
-    status = 500;
+    status = defaultStatus;
     body.name = defaultName;
     body.message = defaultMessage;
   }
