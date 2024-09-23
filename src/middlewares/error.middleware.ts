@@ -1,21 +1,22 @@
 /* eslint-disable no-console */
 import { NextFunction, Request, Response } from 'express';
 
-import { Prisma } from '@prisma/client';
-import { CONFIG } from '#config';
 import {
-  AccessTokenExpiredError,
   ActivationCodeIncorrect,
   ActivationError,
   ActivationMaxAttemptsExceededError,
   ActivationRateLimitError,
   ApiError,
-  RouteNotFoundError,
   InvalidPasswordError,
-  UserEmailNotFoundError,
   InvalidUserCredentialsError,
+  RouteNotFoundError,
+  TokenExpiredError,
+  UnexpectedError,
+  UserEmailNotFoundError,
   UserIdNotFoundError
-} from '#/errors/api-error';
+} from '#/errors/classes.errors';
+import { CONFIG } from '#config';
+import { Prisma } from '@prisma/client';
 
 const isDatabaseError = (error: unknown): boolean => {
   return (
@@ -32,7 +33,7 @@ export function ErrorMiddleware(
 ) {
   let status = 500;
 
-  const defaultMessage = 'Something went wrong...';
+  const defaultMessage = 'Something went wrong. Please try again later';
   const defaultName = 'InternalError';
 
   const body: Record<string, string | number | string[]> = {
@@ -55,7 +56,7 @@ export function ErrorMiddleware(
         body.secondsUntilNextCode = error.secondsUntilNextCode;
         res.setHeader('Retry-After', error.secondsUntilNextCode.toString());
       }
-    } else if (error instanceof AccessTokenExpiredError) {
+    } else if (error instanceof TokenExpiredError) {
       body.expiredAt = error.expiredAt.getTime();
     } else if (
       CONFIG.NODE_ENV === 'production' &&
@@ -70,7 +71,7 @@ export function ErrorMiddleware(
     } else if (error instanceof RouteNotFoundError) {
       body.url = error.url;
     }
-  } else if (isDatabaseError(error)) {
+  } else if (error instanceof UnexpectedError || isDatabaseError(error)) {
     status = 500;
     body.name = defaultName;
     body.message = defaultMessage;
@@ -78,7 +79,11 @@ export function ErrorMiddleware(
 
   if (CONFIG.NODE_ENV !== 'production') {
     if (error instanceof ApiError) console.error('Operational error: ', error);
-    else console.error('Non-operational error: ', error);
+    else if (error instanceof UnexpectedError) {
+      console.error('Unexpected error: ', error);
+    } else {
+      console.error('Unknown error: ', error);
+    }
   }
 
   return res.status(status).json(body);
