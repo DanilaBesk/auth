@@ -216,7 +216,7 @@ export class ActivationRateLimitError extends ActivationError {
     return new Date(createdAt.getTime() + ACTIVATION_CODE_EXPIRE_IN * 1000);
   }
 }
-export class ActivationCodeNotFoundOrExpired extends ActivationError {
+export class ActivationCodeNotFoundOrExpiredError extends ActivationError {
   constructor() {
     super({
       status: 404,
@@ -224,7 +224,7 @@ export class ActivationCodeNotFoundOrExpired extends ActivationError {
     });
   }
 }
-export class ActivationCodeIncorrect extends ActivationError {
+export class ActivationCodeIncorrectError extends ActivationError {
   attemptsLeft: number;
 
   constructor({ attemptsLeft }: { attemptsLeft: number }) {

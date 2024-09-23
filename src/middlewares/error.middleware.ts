@@ -3,7 +3,7 @@
 import { NextFunction, Request, Response } from 'express';
 
 import {
-  ActivationCodeIncorrect,
+  ActivationCodeIncorrectError,
   ActivationError,
   ActivationRateLimitError,
   ApiError,
@@ -50,7 +50,7 @@ export function ErrorMiddleware(
     if (error instanceof ValidationError) {
       body.errors = error.errors;
     } else if (error instanceof ActivationError) {
-      if (error instanceof ActivationCodeIncorrect) {
+      if (error instanceof ActivationCodeIncorrectError) {
         body.attemptsLeft = error.attemptsLeft;
       } else if (error instanceof ActivationRateLimitError) {
         body.allowedAt = error.allowedAt.getTime();
