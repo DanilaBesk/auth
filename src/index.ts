@@ -14,15 +14,15 @@ export const app: Application = express();
 app.use(
   cors({
     credentials: true,
-    origin: CONFIG.CLIENT_URL,
+    origin: `http://${CONFIG.CLIENT_HOST}:${CONFIG.CLIENT_PORT}`,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: 'Content-Type, Authorization',
+    allowedHeaders: 'Origin, Content-Type, Authorization, Accept',
     preflightContinue: false,
     optionsSuccessStatus: 204
   })
 );
 app.use(express.json());
-app.use(cookieParser(CONFIG.COOKIE_SECRET));
+app.use(cookieParser());
 
 app.use('/api', router);
 

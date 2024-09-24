@@ -11,12 +11,11 @@ const portSchema = z.preprocess(
 const configSchema = z.object({
   DATABASE_URL: z.string(),
 
-  COOKIE_SECRET: z.string(),
-
   JWT_ACCESS_SECRET: z.string(),
   JWT_REFRESH_SECRET: z.string(),
 
-  CLIENT_URL: z.string(),
+  CLIENT_HOST: z.string(),
+  CLIENT_PORT: portSchema,
 
   APP_HOST: z.string(),
   APP_PORT: portSchema,
@@ -36,12 +35,11 @@ const configSchema = z.object({
 export const CONFIG: z.infer<typeof configSchema> = configSchema.parse({
   DATABASE_URL: process.env.DATABASE_URL,
 
-  COOKIE_SECRET: process.env.COOKIE_SECRET,
-
   JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET,
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
 
-  CLIENT_URL: process.env.CLIENT_URL,
+  CLIENT_HOST: process.env.CLILENT_HOST,
+  CLIENT_PORT: process.env.CLIENT_PORT,
 
   APP_HOST: process.env.APP_HOST,
   APP_PORT: process.env.APP_PORT,

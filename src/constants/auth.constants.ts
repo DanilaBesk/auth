@@ -17,7 +17,7 @@ export const REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS = 24;
 export const REFRESH_COOKIE_OPIONS: CookieOptions = {
   maxAge: REFRESH_TOKEN_EXPIRES_IN * 1000,
   path: '/api/auth',
-  domain: CONFIG.CLIENT_URL,
+  domain: CONFIG.CLIENT_HOST,
   secure: false, //TODO: change to true
   httpOnly: true,
   sameSite: 'strict'
