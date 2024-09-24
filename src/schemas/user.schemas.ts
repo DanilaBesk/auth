@@ -81,7 +81,8 @@ export const AUTHORIZATION_HEADER_ACCESS_TOKEN = z
   .refine((header) => {
     const [scheme, token] = header.split(' ');
     return scheme === 'Bearer' && !!token;
-  }, 'Invalid authorization header. Expected format: Bearer <token>');
+  }, 'Invalid authorization header. Expected format: Bearer <token>')
+  .transform((header) => header.split(' ')[1]);
 
 export const CreateActivationRecordSchema = z.object({
   body: z.object({
