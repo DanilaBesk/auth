@@ -1,4 +1,4 @@
-import * as jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { v4 as uuid } from 'uuid';
 
@@ -92,17 +92,17 @@ export class TokenService {
     signature: string;
   }> {
     return new Promise((resolve, reject) => {
-      jwt.verify(token, secret, { complete: true }, (error, decoded) => {
+      jwt.verify(token, secret, { complete: true }, async (error, decoded) => {
         if (error) {
           if (error instanceof jwt.JsonWebTokenError) {
             if (error instanceof jwt.TokenExpiredError) {
-              reject(
+              return reject(
                 new TokenExpiredError({ tokenType, expiredAt: error.expiredAt })
               );
             }
-            reject(new TokenVerifyError({ tokenType }));
+            return reject(new TokenVerifyError({ tokenType }));
           }
-          reject(new UnexpectedError(error));
+          return reject(new UnexpectedError(error));
         }
         if (!decoded) {
           return reject(
@@ -111,13 +111,16 @@ export class TokenService {
             })
           );
         }
-        const payload = this.validateTokenPayload({
+        const validatedPayload = await this.validateTokenPayload({
           schema,
           payload: decoded.payload,
           tokenType
         });
 
-        return resolve({ ...decoded, payload });
+        return resolve({
+          ...decoded,
+          payload: validatedPayload
+        });
       });
     });
   }
