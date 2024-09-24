@@ -150,7 +150,7 @@ export class AuthController extends BaseController {
       } = await super.validateRequestData({ schema: RefreshTokensSchema, req });
 
       const {
-        payload: { refreshSessionId, sub: userId },
+        payload: { sub: userId, refreshSessionId },
         signature: tokenSignature
       } = await TokenService.verifyRefreshToken({ refreshToken });
 
