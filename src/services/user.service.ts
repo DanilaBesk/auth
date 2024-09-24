@@ -9,7 +9,8 @@ import {
   ActivationCodeIncorrectError,
   ActivationCodeNotFoundOrExpiredError,
   ActivationMaxAttemptsExceededError,
-  ActivationRateLimitError
+  ActivationRateLimitError,
+  UserEmailConflictError
 } from '#/errors/classes.errors';
 import {
   TActivationRecord,
@@ -45,6 +46,11 @@ export class UserService {
   }
 
   static async createActivationRecord({ email, ip }: TCreateActivationRecord) {
+    const candidate = await this.findUserByEmail({ email });
+    if (candidate) {
+      throw new UserEmailConflictError();
+    }
+
     const userActivationKey = this.getUserActivationKey({ email });
 
     const record = await redis.get(userActivationKey);
