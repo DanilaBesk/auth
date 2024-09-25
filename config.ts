@@ -38,7 +38,7 @@ export const CONFIG: z.infer<typeof configSchema> = configSchema.parse({
   JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET,
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
 
-  CLIENT_HOST: process.env.CLILENT_HOST,
+  CLIENT_HOST: process.env.CLIENT_HOST,
   CLIENT_PORT: process.env.CLIENT_PORT,
 
   APP_HOST: process.env.APP_HOST,
