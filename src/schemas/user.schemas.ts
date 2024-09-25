@@ -90,3 +90,9 @@ export const CreateActivationRecordSchema = z.object({
   }),
   ip: IP
 });
+
+export const DeleteUserSchema = z.object({
+  headers: z.object({
+    authorization: AUTHORIZATION_HEADER_ACCESS_TOKEN
+  })
+});

@@ -7,5 +7,6 @@ userRouter.post(
   '/request-activation-code',
   UserController.createActivationRecord
 );
+userRouter.delete('/', UserController.deleteUser);
 
 export { userRouter };

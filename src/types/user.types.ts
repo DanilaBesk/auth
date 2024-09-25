@@ -3,6 +3,7 @@ import { User } from '@prisma/client';
 
 import { CreateActivationRecordSchema } from '#/schemas/user.schemas';
 import { TRegistration } from '#/types/auth.types';
+import { TAccessTokenData } from '#/types/token.types';
 
 export type TGetUserActivationKey = Pick<User, 'email'>;
 
@@ -26,3 +27,5 @@ export type TCreateActivationRecord = {
 } & TCreateActivationRecordSchema['body'];
 
 export type TVerifyActivationCode = Pick<TRegistration, 'email' | 'code'>;
+
+export type TDeleteUser = Pick<TAccessTokenData, 'userId' | 'refreshSessionId'>;

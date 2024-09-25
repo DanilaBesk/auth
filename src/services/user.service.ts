@@ -1,21 +1,26 @@
 import { redis, prisma, ipdata } from '#/providers';
-import { MailService } from '#/services/mail.service';
+import { MailService, TokenService } from '#/services';
 import {
   ACTIVATION_CODE_ATTEMPTS_LIMIT,
   ACTIVATION_CODE_EXPIRE_IN,
-  ACTIVATION_CODE_REQUEST_INTERVAL_SECONDS
+  ACTIVATION_CODE_REQUEST_INTERVAL_SECONDS,
+  USER_DELETION_TIMEOUT_HOURS
 } from '#/constants/user.constants';
 import {
   ActivationCodeIncorrectError,
   ActivationCodeNotFoundOrExpiredError,
   ActivationMaxAttemptsExceededError,
   ActivationRateLimitError,
-  UserEmailConflictError
+  RefreshSessionNotFoundOrExpiredError,
+  UserDeletionTimeoutNotReachedError,
+  UserEmailConflictError,
+  UserIdNotFoundError
 } from '#/errors/classes.errors';
 import {
   TActivationRecord,
   TCreateActivationRecord,
   TCreateUser,
+  TDeleteUser,
   TFindUserByEmail,
   TFindUserById,
   TGetUserActivationKey,
@@ -119,5 +124,36 @@ export class UserService {
     }
 
     await redis.del(userActivationKey);
+  }
+  static async deleteUser({ userId, refreshSessionId }: TDeleteUser) {
+    const [user, currentSession] = await Promise.all([
+      prisma.user.findUnique({ where: { id: userId } }),
+      TokenService.getRefreshSession({
+        userId,
+        refreshSessionId
+      })
+    ]);
+
+    if (!user) {
+      throw new UserIdNotFoundError();
+    }
+    if (!currentSession) {
+      throw new RefreshSessionNotFoundOrExpiredError();
+    }
+
+    const deletionTimeout = USER_DELETION_TIMEOUT_HOURS * 60 * 60 * 1000;
+    const timeSinceCreation = Date.now() - currentSession.createdAt;
+
+    if (deletionTimeout > timeSinceCreation) {
+      throw new UserDeletionTimeoutNotReachedError({
+        createdAt: new Date(currentSession.createdAt)
+      });
+    }
+    await Promise.all([
+      prisma.user.delete({
+        where: { id: userId }
+      }),
+      TokenService.deleteAllUserRefreshSessions({ userId })
+    ]);
   }
 }

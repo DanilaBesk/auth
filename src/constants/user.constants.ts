@@ -10,3 +10,5 @@ export const CHANGE_EMAIL_CODE_LENGTH = 6;
 export const CHANGE_PASSWORD_CODE_LENGTH = 6;
 
 export const INITIAL_USER_ROLE = Role.USER;
+
+export const USER_DELETION_TIMEOUT_HOURS = 24;

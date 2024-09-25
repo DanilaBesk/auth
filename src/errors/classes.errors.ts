@@ -2,7 +2,10 @@ import {
   MAX_REFRESH_TOKENS_FOR_USER,
   REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS
 } from '#/constants/auth.constants';
-import { ACTIVATION_CODE_EXPIRE_IN } from '#/constants/user.constants';
+import {
+  ACTIVATION_CODE_EXPIRE_IN,
+  USER_DELETION_TIMEOUT_HOURS
+} from '#/constants/user.constants';
 import { TTokenType } from '#/types/token.types';
 import { capitalizeFirstLetter } from '#/utils/capitalize-first-letter.utility';
 
@@ -81,6 +84,7 @@ export class RefreshSessionNotFoundOrExpiredError extends UnauthorizedError {
     });
   }
 }
+
 export class RefreshSessionInvalidFingerprintError extends UnauthorizedError {
   constructor() {
     super({
@@ -88,6 +92,7 @@ export class RefreshSessionInvalidFingerprintError extends UnauthorizedError {
     });
   }
 }
+
 export class RefreshSessionInvalidSignatureError extends UnauthorizedError {
   constructor() {
     super({
@@ -95,6 +100,7 @@ export class RefreshSessionInvalidSignatureError extends UnauthorizedError {
     });
   }
 }
+
 export class RefreshSessionCancellationTimeoutNotReachedError extends ApiError {
   allowedAt: Date;
 
@@ -110,6 +116,24 @@ export class RefreshSessionCancellationTimeoutNotReachedError extends ApiError {
     return new Date(
       createdAt.getTime() +
         REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS * 60 * 60 * 1000
+    );
+  }
+}
+
+export class UserDeletionTimeoutNotReachedError extends ApiError {
+  allowedAt: Date;
+
+  constructor({ createdAt }: { createdAt: Date }) {
+    super({
+      status: 403,
+      message: `You cannot delete your account until the required ${USER_DELETION_TIMEOUT_HOURS}-hour period has elapsed`
+    });
+    this.allowedAt = this.calculateAllowedAt(createdAt);
+  }
+
+  private calculateAllowedAt(createdAt: Date) {
+    return new Date(
+      createdAt.getTime() + USER_DELETION_TIMEOUT_HOURS * 60 * 60 * 1000
     );
   }
 }

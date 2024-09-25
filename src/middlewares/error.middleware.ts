@@ -13,6 +13,7 @@ import {
   RouteNotFoundError,
   TokenExpiredError,
   UnexpectedError,
+  UserDeletionTimeoutNotReachedError,
   UserEmailNotFoundError,
   UserIdNotFoundError,
   ValidationError
@@ -59,7 +60,8 @@ export function ErrorMiddleware(
     } else if (error instanceof TokenExpiredError) {
       body.expiredAt = error.expiredAt.getTime();
     } else if (
-      error instanceof RefreshSessionCancellationTimeoutNotReachedError
+      error instanceof RefreshSessionCancellationTimeoutNotReachedError ||
+      error instanceof UserDeletionTimeoutNotReachedError
     ) {
       body.allowedAt = error.allowedAt.getTime();
     } else if (
