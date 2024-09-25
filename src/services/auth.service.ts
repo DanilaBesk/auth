@@ -155,9 +155,11 @@ export class AuthService {
       refreshToken
     };
   }
+
   static async logout({ userId, refreshSessionId }: TLogout) {
     await TokenService.deleteRefreshSession({ userId, refreshSessionId });
   }
+
   static async logoutAll({ userId, refreshSessionId }: TLogoutAll) {
     const currentSession = await TokenService.getRefreshSession({
       userId,
@@ -168,10 +170,11 @@ export class AuthService {
       throw new RefreshSessionNotFoundOrExpiredError();
     }
 
-    if (
-      REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS * 60 * 60 * 1000 >
-      Date.now() - currentSession.createdAt
-    ) {
+    const cancellationTimeout =
+      REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS * 60 * 60 * 1000;
+    const timeSinceCreation = Date.now() - currentSession.createdAt;
+
+    if (cancellationTimeout > timeSinceCreation) {
       throw new RefreshSessionCancellationTimeoutNotReachedError({
         createdAt: new Date(currentSession.createdAt)
       });
@@ -179,6 +182,7 @@ export class AuthService {
 
     await TokenService.deleteAllUserRefreshSessions({ userId });
   }
+
   static async logoutAllExceptCurrent({
     userId,
     refreshSessionId
@@ -193,10 +197,11 @@ export class AuthService {
       throw new RefreshSessionNotFoundOrExpiredError();
     }
 
-    if (
-      REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS * 60 * 60 * 1000 >
-      Date.now() - currentSession.createdAt
-    ) {
+    const cancellationTimeout =
+      REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS * 60 * 60 * 1000;
+    const timeSinceCreation = Date.now() - currentSession.createdAt;
+
+    if (cancellationTimeout > timeSinceCreation) {
       throw new RefreshSessionCancellationTimeoutNotReachedError({
         createdAt: new Date(currentSession.createdAt)
       });

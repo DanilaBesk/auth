@@ -36,6 +36,7 @@ export class UserService {
   private static getUserActivationKey({ email }: TGetUserActivationKey) {
     return `activation:${email}`;
   }
+
   static async createUser({ email, password, role }: TCreateUser) {
     return await prisma.user.create({
       data: { email, password, role }
