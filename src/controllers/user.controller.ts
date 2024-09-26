@@ -3,12 +3,12 @@ import { NextFunction, Request, Response } from 'express';
 import { BaseController } from '#/controllers';
 import { TokenService, UserService } from '#/services';
 import {
-  CreateActivationRecordSchema,
+  RequestActivationCodeSchema,
   DeleteUserSchema
 } from '#/schemas/user.schemas';
 
 export class UserController extends BaseController {
-  static async createActivationRecord(
+  static async requestActivationCode(
     req: Request,
     res: Response,
     next: NextFunction
@@ -18,11 +18,11 @@ export class UserController extends BaseController {
         body: { email },
         ip
       } = await super.validateRequestData({
-        schema: CreateActivationRecordSchema,
+        schema: RequestActivationCodeSchema,
         req
       });
 
-      await UserService.createActivationRecord({ email, ip });
+      await UserService.requestActivationCode({ email, ip });
       return res.sendStatus(201);
     } catch (error) {
       next(error);

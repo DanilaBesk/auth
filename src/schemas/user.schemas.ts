@@ -84,7 +84,7 @@ export const AUTHORIZATION_HEADER_ACCESS_TOKEN = z
   }, 'Invalid authorization header. Expected format: Bearer <token>')
   .transform((header) => header.split(' ')[1]);
 
-export const CreateActivationRecordSchema = z.object({
+export const RequestActivationCodeSchema = z.object({
   body: z.object({
     email: EMAIL
   }),

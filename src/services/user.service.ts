@@ -18,12 +18,12 @@ import {
 } from '#/errors/classes.errors';
 import {
   TActivationRecord,
-  TCreateActivationRecord,
   TCreateUser,
   TDeleteUser,
   TFindUserByEmail,
   TFindUserById,
   TGetUserActivationKey,
+  TRequestActivationCode,
   TVerifyActivationCode
 } from '#/types/user.types';
 
@@ -51,7 +51,7 @@ export class UserService {
     return await prisma.user.findUnique({ where: { id } });
   }
 
-  static async createActivationRecord({ email, ip }: TCreateActivationRecord) {
+  static async requestActivationCode({ email, ip }: TRequestActivationCode) {
     const candidate = await this.findUserByEmail({ email });
     if (candidate) {
       throw new UserEmailConflictError();

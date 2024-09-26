@@ -5,7 +5,7 @@ const userRouter = Router();
 
 userRouter.post(
   '/request-activation-code',
-  UserController.createActivationRecord
+  UserController.requestActivationCode
 );
 userRouter.delete('/', UserController.deleteUser);
 

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { User } from '@prisma/client';
 
-import { CreateActivationRecordSchema } from '#/schemas/user.schemas';
+import { RequestActivationCodeSchema } from '#/schemas/user.schemas';
 import { TRegistration } from '#/types/auth.types';
 import { TAccessTokenData } from '#/types/token.types';
 
@@ -19,12 +19,10 @@ export type TActivationRecord = {
   createdAt: number;
 };
 
-type TCreateActivationRecordSchema = z.infer<
-  typeof CreateActivationRecordSchema
->;
-export type TCreateActivationRecord = {
-  ip: TCreateActivationRecordSchema['ip'];
-} & TCreateActivationRecordSchema['body'];
+type TRequestActivationCodeSchema = z.infer<typeof RequestActivationCodeSchema>;
+export type TRequestActivationCode = {
+  ip: TRequestActivationCodeSchema['ip'];
+} & TRequestActivationCodeSchema['body'];
 
 export type TVerifyActivationCode = Pick<TRegistration, 'email' | 'code'>;
 
