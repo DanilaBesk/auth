@@ -100,7 +100,6 @@ export class AuthService {
     const accessTokenData: TAccessTokenData = {
       userId: user.id,
       refreshSessionId,
-      email,
       role: user.role
     };
     const accessToken = await TokenService.makeAccessToken(accessTokenData);
@@ -145,7 +144,6 @@ export class AuthService {
     const accessTokenData: TAccessTokenData = {
       userId: user.id,
       refreshSessionId,
-      email: user.email,
       role: user.role
     };
     const accessToken = await TokenService.makeAccessToken(accessTokenData);
@@ -272,7 +270,6 @@ export class AuthService {
     const tokenData: TAccessTokenData = {
       userId: user.id,
       refreshSessionId: newRefreshSessionId,
-      email: user.email,
       role: user.role
     };
     const accessToken = await TokenService.makeAccessToken(tokenData);

@@ -144,12 +144,10 @@ export class TokenService {
   static async makeAccessToken({
     userId,
     refreshSessionId,
-    email,
     role
   }: TMakeAccessToken) {
     const payload = {
       refreshSessionId,
-      email,
       role
     };
 
