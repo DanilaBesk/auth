@@ -1,29 +1,51 @@
-import { z } from 'zod';
-import { User } from '@prisma/client';
+import { Role } from '@prisma/client';
 
-import { RequestActivationCodeSchema } from '#/schemas/user.schemas';
-import { TRegistration } from '#/types/auth.types';
-import { TAccessTokenData } from '#/types/token.types';
+export type TCreateUser = {
+  email: string;
+  password: string;
+  role: Role;
+};
 
-export type TGetUserActivationKey = Pick<User, 'email'>;
+export type TFindUserByEmail = {
+  email: string;
+};
 
-export type TCreateUser = Pick<User, 'email' | 'password' | 'role'>;
+export type TFindUserById = {
+  userId: string;
+};
 
-export type TFindUserByEmail = Pick<User, 'email'>;
+export type TGetUserActivationKey = {
+  email: string;
+};
 
-export type TFindUserById = Pick<User, 'id'>;
+export type TGetUserChangeEmailKey = {
+  userId: string;
+};
 
 export type TActivationRecord = {
   code: string;
   attempts: number;
   createdAt: number;
+  requestCount: number;
 };
 
-type TRequestActivationCodeSchema = z.infer<typeof RequestActivationCodeSchema>;
+export type TChangeEmailRecord = {
+  code: string;
+  attempts: number;
+  createdAt: number;
+};
+
 export type TRequestActivationCode = {
-  ip: TRequestActivationCodeSchema['ip'];
-} & TRequestActivationCodeSchema['body'];
+  email: string;
+  ip: string;
+};
 
-export type TVerifyActivationCode = Pick<TRegistration, 'email' | 'code'>;
+export type TVerifyActivationCode = {
+  email: string;
+  code: string;
+};
 
-export type TDeleteUser = Pick<TAccessTokenData, 'userId' | 'refreshSessionId'>;
+export type TDeleteUser = {
+  userId: string;
+  refreshSessionId: string;
+};
