@@ -2,22 +2,14 @@ import { z } from 'zod';
 
 import {
   ACTIVATION_CODE,
-  AUTHORIZATION_HEADER_ACCESS_TOKEN,
+  AUTHORIZATION_HEADER,
   EMAIL,
   FINGERPRINT,
   IP,
   PASSWORD,
+  REFRESH_TOKEN,
   USER_AGENT_HEADER
-} from '#/schemas/user.schemas';
-import { createValidationOptions } from '#/schemas/utils/create-validation-options.utility';
-
-export const REFRESH_TOKEN = z.string(
-  createValidationOptions('refresh token', 'string')
-);
-
-export const REFRESH_SESSION_ID = z
-  .string(createValidationOptions('refresh session', 'string'))
-  .uuid('Invalid refreshSessionId');
+} from '#/schemas/common.schemas';
 
 export const RegistrationSchema = z.object({
   body: z.object({
@@ -48,19 +40,19 @@ export const LoginSchema = z.object({
 
 export const LogoutSchema = z.object({
   headers: z.object({
-    authorization: AUTHORIZATION_HEADER_ACCESS_TOKEN
+    authorization: AUTHORIZATION_HEADER
   })
 });
 
 export const LogoutAllSchema = z.object({
   headers: z.object({
-    authorization: AUTHORIZATION_HEADER_ACCESS_TOKEN
+    authorization: AUTHORIZATION_HEADER
   })
 });
 
 export const LogoutAllExceptCurrentSchema = z.object({
   headers: z.object({
-    authorization: AUTHORIZATION_HEADER_ACCESS_TOKEN
+    authorization: AUTHORIZATION_HEADER
   })
 });
 

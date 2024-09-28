@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
-import { ROLE, USER_ID } from '#/schemas/user.schemas';
-import { REFRESH_SESSION_ID } from '#/schemas/auth.schemas';
+import { REFRESH_SESSION_ID, ROLE, USER_ID } from '#/schemas/common.schemas';
 
 export const RefreshTokenPayloadSchema = z.object({
   sub: USER_ID,
