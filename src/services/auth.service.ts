@@ -223,12 +223,12 @@ export class AuthService {
     userId,
     refreshSessionId,
     tokenSignature,
-    fingerprint,
+    ip,
     ua,
-    ip
+    fingerprint
   }: TRefreshTokens) {
     const [user, oldRefreshSession] = await Promise.all([
-      UserService.findUserById({ id: userId }),
+      UserService.findUserById({ userId }),
       TokenService.getRefreshSession({
         userId,
         refreshSessionId
@@ -250,6 +250,14 @@ export class AuthService {
     }
     if (oldRefreshSession.fingerprint !== fingerprint) {
       throw new RefreshSessionInvalidFingerprintError();
+    }
+
+    const sessionsCount = await TokenService.getUserRefreshSessionsCount({
+      userId: user.id
+    });
+
+    if (sessionsCount >= MAX_REFRESH_TOKENS_FOR_USER) {
+      throw new MaxRefreshSessionsExceededError();
     }
 
     const {
