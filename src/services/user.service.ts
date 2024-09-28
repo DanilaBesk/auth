@@ -2,7 +2,7 @@ import { redis, prisma, ipdata } from '#/providers';
 import { MailService, TokenService } from '#/services';
 import {
   ACTIVATION_CODE_ATTEMPTS_LIMIT,
-  ACTIVATION_CODE_EXPIRE_IN,
+  ACTIVATION_CODE_EXPIRATION_TIME_SECONDS,
   ACTIVATION_CODE_REQUEST_INTERVAL_SECONDS,
   USER_DELETION_TIMEOUT_HOURS
 } from '#/constants/user.constants';
@@ -47,8 +47,8 @@ export class UserService {
     return await prisma.user.findUnique({ where: { email } });
   }
 
-  static async findUserById({ id }: TFindUserById) {
-    return await prisma.user.findUnique({ where: { id } });
+  static async findUserById({ userId }: TFindUserById) {
+    return await prisma.user.findUnique({ where: { id: userId } });
   }
 
   static async requestActivationCode({ email, ip }: TRequestActivationCode) {
@@ -60,33 +60,49 @@ export class UserService {
     const userActivationKey = this.getUserActivationKey({ email });
 
     const record = await redis.get(userActivationKey);
+    let newRequestCount = 1;
 
     if (record) {
-      const { createdAt } = JSON.parse(record) as TActivationRecord;
+      const { createdAt, requestCount } = JSON.parse(
+        record
+      ) as TActivationRecord;
 
-      const secondsSinceCreation = (Date.now() - createdAt) / 1000;
+      const intervalIndex = Math.min(
+        requestCount,
+        ACTIVATION_CODE_REQUEST_INTERVAL_SECONDS.length - 1
+      );
 
-      const secondsUntilNextCode =
-        ACTIVATION_CODE_REQUEST_INTERVAL_SECONDS - secondsSinceCreation;
+      const nextAllowedAt =
+        createdAt +
+        ACTIVATION_CODE_REQUEST_INTERVAL_SECONDS[intervalIndex] * 1000;
 
-      if (secondsUntilNextCode > 0) {
-        throw new ActivationRateLimitError({ createdAt: new Date(createdAt) });
+      if (nextAllowedAt > Date.now()) {
+        throw new ActivationRateLimitError({
+          allowedAt: new Date(nextAllowedAt)
+        });
       }
+      newRequestCount = requestCount + 1;
     }
+
+    const requestTime = Date.now();
 
     const newRecord: TActivationRecord = {
       code: this.generateSixDigitCode(),
       attempts: ACTIVATION_CODE_ATTEMPTS_LIMIT,
-      createdAt: Date.now()
+      createdAt: requestTime,
+      requestCount: newRequestCount
     };
 
-    const requestTime = new Date();
+    // Максимальное время, через которое прощается много запросов, и обнуляется параметр счетчика запросов
+    const maxExpirationInterval = Math.max(
+      ...ACTIVATION_CODE_REQUEST_INTERVAL_SECONDS
+    );
 
     const [ipData] = await Promise.all([
       ipdata.getIPData(ip),
       redis.setEx(
         userActivationKey,
-        ACTIVATION_CODE_EXPIRE_IN,
+        maxExpirationInterval,
         JSON.stringify(newRecord)
       )
     ]);
@@ -96,7 +112,7 @@ export class UserService {
       toEmail: email,
       requestIp: ip,
       requestIpData: ipData,
-      requestTime
+      requestTime: new Date(requestTime)
     });
   }
 
@@ -109,6 +125,13 @@ export class UserService {
     }
 
     const recordData = JSON.parse(record) as TActivationRecord;
+
+    const expiredAt =
+      recordData.createdAt + ACTIVATION_CODE_EXPIRATION_TIME_SECONDS * 1000;
+
+    if (expiredAt < Date.now()) {
+      throw new ActivationCodeNotFoundOrExpiredError();
+    }
 
     if (recordData.attempts <= 0) {
       throw new ActivationMaxAttemptsExceededError();
@@ -126,9 +149,10 @@ export class UserService {
 
     await redis.del(userActivationKey);
   }
+
   static async deleteUser({ userId, refreshSessionId }: TDeleteUser) {
     const [user, currentSession] = await Promise.all([
-      prisma.user.findUnique({ where: { id: userId } }),
+      this.findUserById({ userId }),
       TokenService.getRefreshSession({
         userId,
         refreshSessionId
