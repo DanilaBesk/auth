@@ -2,10 +2,7 @@ import {
   MAX_REFRESH_TOKENS_FOR_USER,
   REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS
 } from '#/constants/auth.constants';
-import {
-  ACTIVATION_CODE_EXPIRE_IN,
-  USER_DELETION_TIMEOUT_HOURS
-} from '#/constants/user.constants';
+import { USER_DELETION_TIMEOUT_HOURS } from '#/constants/user.constants';
 import { TTokenType } from '#/types/token.types';
 import { capitalizeFirstLetter } from '#/utils/capitalize-first-letter.utility';
 
@@ -228,16 +225,12 @@ export class ActivationMaxAttemptsExceededError extends ActivationError {
 export class ActivationRateLimitError extends ActivationError {
   allowedAt: Date;
 
-  constructor({ createdAt }: { createdAt: Date }) {
+  constructor({ allowedAt }: { allowedAt: Date }) {
     super({
       status: 429,
       message: 'Please wait before requesting a new code'
     });
-    this.allowedAt = this.calculateAllowedAt(createdAt);
-  }
-
-  private calculateAllowedAt(createdAt: Date) {
-    return new Date(createdAt.getTime() + ACTIVATION_CODE_EXPIRE_IN * 1000);
+    this.allowedAt = allowedAt;
   }
 }
 export class ActivationCodeNotFoundOrExpiredError extends ActivationError {
