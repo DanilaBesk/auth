@@ -3,7 +3,8 @@ import { MailService, TokenService } from '#/services';
 import {
   ACTIVATION_CODE_ATTEMPTS_LIMIT,
   ACTIVATION_CODE_EXPIRATION_TIME_SECONDS,
-  ACTIVATION_CODE_REQUEST_INTERVAL_SECONDS,
+  ACTIVATION_CODE_REQUEST_INTERVALS_SECONDS,
+  ACTIVATION_CODE_RESET_TTL_SECONDS,
   USER_DELETION_TIMEOUT_HOURS
 } from '#/constants/user.constants';
 import {
@@ -67,21 +68,21 @@ export class UserService {
         record
       ) as TActivationRecord;
 
-      const intervalIndex = Math.min(
-        requestCount,
-        ACTIVATION_CODE_REQUEST_INTERVAL_SECONDS.length - 1
-      );
+      newRequestCount = requestCount + 1;
+
+      const newInterval =
+        ACTIVATION_CODE_REQUEST_INTERVALS_SECONDS[newRequestCount];
 
       const nextAllowedAt =
-        createdAt +
-        ACTIVATION_CODE_REQUEST_INTERVAL_SECONDS[intervalIndex] * 1000;
+        newInterval !== undefined
+          ? createdAt + newInterval * 1000
+          : createdAt + ACTIVATION_CODE_RESET_TTL_SECONDS * 1000;
 
       if (nextAllowedAt > Date.now()) {
         throw new ActivationRateLimitError({
           allowedAt: new Date(nextAllowedAt)
         });
       }
-      newRequestCount = requestCount + 1;
     }
 
     const requestTime = Date.now();
@@ -93,16 +94,11 @@ export class UserService {
       requestCount: newRequestCount
     };
 
-    // Максимальное время, через которое прощается много запросов, и обнуляется параметр счетчика запросов
-    const maxExpirationInterval = Math.max(
-      ...ACTIVATION_CODE_REQUEST_INTERVAL_SECONDS
-    );
-
     const [ipData] = await Promise.all([
       ipdata.getIPData(ip),
       redis.setEx(
         userActivationKey,
-        maxExpirationInterval,
+        ACTIVATION_CODE_RESET_TTL_SECONDS,
         JSON.stringify(newRecord)
       )
     ]);
@@ -129,7 +125,7 @@ export class UserService {
     const expiredAt =
       recordData.createdAt + ACTIVATION_CODE_EXPIRATION_TIME_SECONDS * 1000;
 
-    if (expiredAt < Date.now()) {
+    if (expiredAt <= Date.now()) {
       throw new ActivationCodeNotFoundOrExpiredError();
     }
 
