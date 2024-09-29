@@ -36,7 +36,6 @@
     "space-unary-ops": "error",
     "quotes": ["error", "single"],
     //
-    "max-lines": ["error", { "max": 300 }],
     "keyword-spacing": "error",
     //
     "no-multiple-empty-lines": ["error", { "max": 2, "maxEOF": 1 }],
