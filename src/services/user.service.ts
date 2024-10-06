@@ -1,43 +1,25 @@
-import { redis, prisma, ipdata } from '#/providers';
-import { MailService, TokenService } from '#/services';
+import { ipdata, prisma } from '#/providers';
+import { CodeService, MailService, TokenService } from '#/services';
 import {
-  ACTIVATION_CODE_ATTEMPTS_LIMIT,
-  ACTIVATION_CODE_EXPIRATION_TIME_SECONDS,
-  ACTIVATION_CODE_REQUEST_INTERVALS_SECONDS,
-  ACTIVATION_CODE_RESET_TTL_SECONDS,
-  USER_DELETION_TIMEOUT_HOURS
-} from '#/constants/user.constants';
-import {
-  ActivationCodeIncorrectError,
-  ActivationCodeNotFoundOrExpiredError,
-  ActivationMaxAttemptsExceededError,
-  ActivationRateLimitError,
-  RefreshSessionNotFoundOrExpiredError,
-  UserDeletionTimeoutNotReachedError,
   UserEmailConflictError,
   UserIdNotFoundError
 } from '#/errors/classes.errors';
 import {
-  TActivationRecord,
+  TChangeEmailWithCodeVerification,
   TCreateUser,
-  TDeleteUser,
   TFindUserByEmail,
   TFindUserById,
-  TGetUserActivationKey,
-  TRequestActivationCode,
-  TVerifyActivationCode
+  TGetUserActivationRecordKey,
+  TGetEmailChangeRecordKey,
+  TGetUserDeletionRecordKey,
+  TRequestEmailChangeCode,
+  TRequestUserActivationCode,
+  TVerifyUserActivationCode,
+  TRequestUserDeletionCode,
+  TDeleteUserWithCodeVerification
 } from '#/types/user.types';
 
 export class UserService {
-  private static generateSixDigitCode() {
-    const random = Math.floor(Math.random() * 1000000);
-    return random.toString().padStart(6, '0');
-  }
-
-  private static getUserActivationKey({ email }: TGetUserActivationKey) {
-    return `activation:${email}`;
-  }
-
   static async createUser({ email, password, role }: TCreateUser) {
     return await prisma.user.create({
       data: { email, password, role }
@@ -52,124 +34,167 @@ export class UserService {
     return await prisma.user.findUnique({ where: { id: userId } });
   }
 
-  static async requestActivationCode({ email, ip }: TRequestActivationCode) {
+  private static getUserActivationRecordKey({
+    email
+  }: TGetUserActivationRecordKey) {
+    return `user-activation:${email}`;
+  }
+
+  private static getEmailChangeRecordKey({ userId }: TGetEmailChangeRecordKey) {
+    return `email-change:${userId}`;
+  }
+
+  private static getUserDeletionRecordKey({
+    userId
+  }: TGetUserDeletionRecordKey) {
+    return `user-deletion:${userId}`;
+  }
+
+  static async requestUserActivationCode({
+    email,
+    ip,
+    requestTime
+  }: TRequestUserActivationCode) {
     const candidate = await this.findUserByEmail({ email });
+
     if (candidate) {
       throw new UserEmailConflictError();
     }
 
-    const userActivationKey = this.getUserActivationKey({ email });
+    const recordKey = this.getUserActivationRecordKey({ email });
 
-    const record = await redis.get(userActivationKey);
-    let newRequestCount = 1;
+    const { code } = await CodeService.createCodeRecord({
+      recordKey
+    });
 
-    if (record) {
-      const { createdAt, requestCount } = JSON.parse(
-        record
-      ) as TActivationRecord;
+    const ipData = await ipdata.getIPData(ip);
 
-      newRequestCount = requestCount + 1;
-
-      const newInterval =
-        ACTIVATION_CODE_REQUEST_INTERVALS_SECONDS[newRequestCount];
-
-      const nextAllowedAt =
-        newInterval !== undefined
-          ? createdAt + newInterval * 1000
-          : createdAt + ACTIVATION_CODE_RESET_TTL_SECONDS * 1000;
-
-      if (nextAllowedAt > Date.now()) {
-        throw new ActivationRateLimitError({
-          allowedAt: new Date(nextAllowedAt)
-        });
-      }
-    }
-
-    const requestTime = Date.now();
-
-    const newRecord: TActivationRecord = {
-      code: this.generateSixDigitCode(),
-      attempts: ACTIVATION_CODE_ATTEMPTS_LIMIT,
-      createdAt: requestTime,
-      requestCount: newRequestCount
-    };
-
-    const [ipData] = await Promise.all([
-      ipdata.getIPData(ip),
-      redis.setEx(
-        userActivationKey,
-        ACTIVATION_CODE_RESET_TTL_SECONDS,
-        JSON.stringify(newRecord)
-      )
-    ]);
-
-    await MailService.sendActivationCode({
-      code: newRecord.code,
-      toEmail: email,
+    await MailService.sendUserActivationCode({
+      code: code,
+      email,
       requestIp: ip,
       requestIpData: ipData,
-      requestTime: new Date(requestTime)
+      requestTime
     });
   }
 
-  static async verifyActivationCode({ email, code }: TVerifyActivationCode) {
-    const userActivationKey = this.getUserActivationKey({ email });
+  static async verifyUserActivationCode({
+    email,
+    code
+  }: TVerifyUserActivationCode) {
+    const recordKey = this.getUserActivationRecordKey({ email });
 
-    const record = await redis.get(userActivationKey);
-    if (!record) {
-      throw new ActivationCodeNotFoundOrExpiredError();
-    }
-
-    const recordData = JSON.parse(record) as TActivationRecord;
-
-    const expiredAt =
-      recordData.createdAt + ACTIVATION_CODE_EXPIRATION_TIME_SECONDS * 1000;
-
-    if (expiredAt <= Date.now()) {
-      throw new ActivationCodeNotFoundOrExpiredError();
-    }
-
-    if (recordData.attempts <= 0) {
-      throw new ActivationMaxAttemptsExceededError();
-    }
-    if (code !== recordData.code) {
-      recordData.attempts -= 1;
-      await redis.set(userActivationKey, JSON.stringify(recordData), {
-        KEEPTTL: true
-      });
-
-      throw new ActivationCodeIncorrectError({
-        attemptsLeft: recordData.attempts
-      });
-    }
-
-    await redis.del(userActivationKey);
+    await CodeService.verifyCodeRecord({ recordKey, code });
   }
 
-  static async deleteUser({ userId, refreshSessionId }: TDeleteUser) {
-    const [user, currentSession] = await Promise.all([
+  static async requestEmailChangeCode({
+    userId,
+    newEmail,
+    ip,
+    requestTime
+  }: TRequestEmailChangeCode) {
+    const [user, userWithNewEmail] = await Promise.all([
       this.findUserById({ userId }),
-      TokenService.getRefreshSession({
-        userId,
-        refreshSessionId
-      })
+      this.findUserByEmail({ email: newEmail })
     ]);
 
     if (!user) {
       throw new UserIdNotFoundError();
     }
-    if (!currentSession) {
-      throw new RefreshSessionNotFoundOrExpiredError();
+    if (userWithNewEmail) {
+      throw new UserEmailConflictError();
     }
 
-    const deletionTimeout = USER_DELETION_TIMEOUT_HOURS * 60 * 60 * 1000;
-    const timeSinceCreation = Date.now() - currentSession.createdAt;
+    const recordKey = this.getEmailChangeRecordKey({ userId });
 
-    if (deletionTimeout > timeSinceCreation) {
-      throw new UserDeletionTimeoutNotReachedError({
-        createdAt: new Date(currentSession.createdAt)
-      });
+    const { code } = await CodeService.createCodeRecord({
+      recordKey
+    });
+
+    const ipData = await ipdata.getIPData(ip);
+
+    await MailService.sendEmailChangeCode({
+      code: code,
+      email: newEmail,
+      requestIp: ip,
+      requestIpData: ipData,
+      requestTime
+    });
+  }
+
+  static async changeEmailWithCodeVerification({
+    userId,
+    newEmail,
+    code
+  }: TChangeEmailWithCodeVerification) {
+    const [user, userWithNewEmail] = await Promise.all([
+      this.findUserById({ userId }),
+      this.findUserByEmail({ email: newEmail })
+    ]);
+
+    if (!user) {
+      throw new UserIdNotFoundError();
     }
+    if (userWithNewEmail) {
+      throw new UserEmailConflictError();
+    }
+
+    const recordKey = this.getEmailChangeRecordKey({ userId });
+
+    await CodeService.verifyCodeRecord({ recordKey, code });
+
+    await prisma.user.update({
+      where: {
+        id: userId
+      },
+      data: {
+        email: newEmail
+      }
+    });
+  }
+
+  static async requestUserDeletionCode({
+    userId,
+    ip,
+    requestTime
+  }: TRequestUserDeletionCode) {
+    const user = await this.findUserById({ userId });
+
+    if (!user) {
+      throw new UserIdNotFoundError();
+    }
+
+    const recordKey = this.getUserDeletionRecordKey({ userId });
+
+    const { code } = await CodeService.createCodeRecord({
+      recordKey
+    });
+
+    const ipData = await ipdata.getIPData(ip);
+
+    await MailService.sendUserDeletionCode({
+      code: code,
+      email: user.email,
+      requestIp: ip,
+      requestIpData: ipData,
+      requestTime
+    });
+  }
+
+  static async deleteUserWithCodeVerification({
+    userId,
+    code
+  }: TDeleteUserWithCodeVerification) {
+    const user = this.findUserById({ userId });
+
+    if (!user) {
+      throw new UserIdNotFoundError();
+    }
+
+    const recordKey = this.getUserDeletionRecordKey({ userId });
+
+    await CodeService.verifyCodeRecord({ recordKey, code });
+
     await Promise.all([
       prisma.user.delete({
         where: { id: userId }

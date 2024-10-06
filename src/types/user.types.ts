@@ -14,38 +14,49 @@ export type TFindUserById = {
   userId: string;
 };
 
-export type TGetUserActivationKey = {
+export type TGetUserActivationRecordKey = {
   email: string;
 };
 
-export type TGetUserChangeEmailKey = {
+export type TGetEmailChangeRecordKey = {
   userId: string;
 };
 
-export type TActivationRecord = {
-  code: string;
-  attempts: number;
-  createdAt: number;
-  requestCount: number;
+export type TGetUserDeletionRecordKey = {
+  userId: string;
 };
 
-export type TChangeEmailRecord = {
-  code: string;
-  attempts: number;
-  createdAt: number;
-};
-
-export type TRequestActivationCode = {
+export type TRequestUserActivationCode = {
   email: string;
   ip: string;
+  requestTime: Date;
 };
 
-export type TVerifyActivationCode = {
+export type TVerifyUserActivationCode = {
   email: string;
   code: string;
 };
 
-export type TDeleteUser = {
+export type TRequestEmailChangeCode = {
   userId: string;
-  refreshSessionId: string;
+  newEmail: string;
+  ip: string;
+  requestTime: Date;
+};
+
+export type TChangeEmailWithCodeVerification = {
+  userId: string;
+  newEmail: string;
+  code: string;
+};
+
+export type TRequestUserDeletionCode = {
+  userId: string;
+  ip: string;
+  requestTime: Date;
+};
+
+export type TDeleteUserWithCodeVerification = {
+  userId: string;
+  code: string;
 };
