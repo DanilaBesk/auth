@@ -1,15 +1,17 @@
 import { TIpdata } from '#/providers/ipdata.provider';
 
-type TSendMailCode = {
-  toEmail: string;
+export type TSendActionCode = {
+  email: string;
+  code: string;
   requestIp: string;
   requestIpData: TIpdata | null;
   requestTime: Date;
-  code: string;
+};
+export type TSend = {
+  email: string;
+  subject: string;
+  html: string;
+  text: string;
 };
 
-export type TSendActivationCode = TSendMailCode;
-
-export type TSendResetPasswordCode = TSendMailCode;
-
-export type TSendChangeEmailCode = TSendMailCode;
+export type TTemplateActionCode = TSendActionCode;

@@ -1,12 +1,12 @@
-import { TSendActivationCode } from '#/types/mail.types';
 import { getIpDataHtml, getIpDataText } from '#/templates/get-ip-data.template';
+import { TTemplateActionCode } from '#/types/mail.types';
 
-export const getActivationCodeHtml = ({
+export const getPasswordResetCodeHtml = ({
   requestIp,
   requestIpData,
   requestTime,
   code
-}: Omit<TSendActivationCode, 'toEmail'>) => `<!doctype html>
+}: Omit<TTemplateActionCode, 'email'>) => `<!doctype html>
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
@@ -65,39 +65,48 @@ export const getActivationCodeHtml = ({
   </head>
   <body>
     <div class="container">
-      <h1>Код активации</h1>
+      <h1>Сброс пароля</h1>
       <p>Здравствуйте!</p>
       <p>
-        Благодарим вас за использование нашего сервиса. Для завершения регистрации, пожалуйста, введите следующий код активации:
+        Вы получили это письмо, потому что запросили сброс пароля на нашем сайте.
+      </p>
+      <p>
+        Чтобы завершить процесс сброса пароля, пожалуйста, используйте следующий код:
       </p>
       <div class="code">${code}</div>
-      <p class="footer">
-        Если вы не запрашивали этот код, просто проигнорируйте это письмо.
+      <p>
+        Если вы не делали запрос на сброс пароля, просто проигнорируйте это письмо. Ваш пароль останется неизменным.
       </p>
       ${getIpDataHtml({ ip: requestIp, ipData: requestIpData, time: requestTime })}
+      <p class="footer">
+        Если у вас возникли вопросы или проблемы, не стесняйтесь обращаться в нашу службу поддержки.
+      </p>
       <p class="signature">
         С уважением,<br />
         Команда DanilaBesk
       </p>
     </div>
   </body>
-</html>
-`;
+</html>`;
 
-export const getActivationCodeText = ({
+export const getPasswordResetCodeText = ({
   requestIp,
   requestIpData,
   requestTime,
   code
-}: Omit<TSendActivationCode, 'toEmail'>) => `Здравствуйте!
+}: Omit<TTemplateActionCode, 'email'>) => `Здравствуйте!
 
-Благодарим вас за использование нашего сервиса. Для завершения регистрации, пожалуйста, введите следующий код активации:
+Вы получили это письмо, потому что запросили сброс пароля на нашем сайте.
 
-Код активации: ${code}
+Чтобы завершить процесс сброса пароля, пожалуйста, используйте следующий код:
 
-Если вы не запрашивали этот код, просто проигнорируйте это письмо.
+Код сброса пароля: ${code}
+
+Если вы не делали запрос на сброс пароля, просто проигнорируйте это письмо. Ваш пароль останется неизменным.
 
 ${getIpDataText({ ip: requestIp, ipData: requestIpData, time: requestTime })}
 
+Если у вас возникли вопросы или проблемы, не стесняйтесь обращаться в нашу службу поддержки.
+
 С уважением,
-Команда DanilaBesk`;
+Команда DanilBesk`;

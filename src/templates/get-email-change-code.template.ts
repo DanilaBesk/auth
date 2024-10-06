@@ -1,13 +1,13 @@
-import { TSendChangeEmailCode } from '#/types/mail.types';
 import { getIpDataHtml, getIpDataText } from '#/templates/get-ip-data.template';
+import { TTemplateActionCode } from '#/types/mail.types';
 
-export const getChangeEmailCodeHtml = ({
+export const getEmailChangeCodeHtml = ({
   requestIp,
   requestIpData,
   requestTime,
   code,
-  toEmail: newEmail
-}: TSendChangeEmailCode) => `<!doctype html>
+  email
+}: TTemplateActionCode) => `<!doctype html>
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
@@ -85,7 +85,7 @@ export const getChangeEmailCodeHtml = ({
         Вы получили это письмо, потому что запросили обновление электронной почты на нашем сайте.
       </p>
       <p>
-        Ваш новый адрес электронной почты: <span class="new-email">${newEmail}</span>
+        Ваш новый адрес электронной почты: <span class="new-email">${email}</span>
       </p>
       <p>
         Пожалуйста, используйте следующий код для подтверждения изменения электронной почты:
@@ -104,20 +104,19 @@ export const getChangeEmailCodeHtml = ({
       </p>
     </div>
   </body>
-</html>
-`;
+</html>`;
 
-export const getChangeEmailCodeText = ({
+export const getEmailChangeCodeText = ({
   requestIp,
   requestIpData,
   requestTime,
   code,
-  toEmail: newEmail
-}: TSendChangeEmailCode) => `Здравствуйте!
+  email
+}: TTemplateActionCode) => `Здравствуйте!
 
 Вы получили это письмо, потому что запросили обновление электронной почты на нашем сайте.
 
-Ваш новый адрес электронной почты: ${newEmail}
+Ваш новый адрес электронной почты: ${email}
 
 Пожалуйста, используйте следующий код для подтверждения изменения электронной почты: ${code}
 
