@@ -3,9 +3,6 @@
 import { NextFunction, Request, Response } from 'express';
 
 import {
-  ActivationCodeIncorrectError,
-  ActivationError,
-  ActivationRateLimitError,
   ApiError,
   InvalidPasswordError,
   InvalidUserCredentialsError,
@@ -13,10 +10,12 @@ import {
   RouteNotFoundError,
   TokenExpiredError,
   UnexpectedError,
-  UserDeletionTimeoutNotReachedError,
   UserEmailNotFoundError,
   UserIdNotFoundError,
-  ValidationError
+  ValidationError,
+  CodeError,
+  CodeIncorrectError,
+  CodeRateLimitError
 } from '#/errors/classes.errors';
 import { CONFIG } from '#config';
 import { Prisma } from '@prisma/client';
@@ -50,18 +49,17 @@ export function ErrorMiddleware(
     body.name = error.name;
     if (error instanceof ValidationError) {
       body.errors = error.errors;
-    } else if (error instanceof ActivationError) {
-      if (error instanceof ActivationCodeIncorrectError) {
+    } else if (error instanceof CodeError) {
+      if (error instanceof CodeIncorrectError) {
         body.attemptsLeft = error.attemptsLeft;
-      } else if (error instanceof ActivationRateLimitError) {
+      } else if (error instanceof CodeRateLimitError) {
         body.allowedAt = error.allowedAt.getTime();
         res.setHeader('Retry-After', error.allowedAt.toString());
       }
     } else if (error instanceof TokenExpiredError) {
       body.expiredAt = error.expiredAt.getTime();
     } else if (
-      error instanceof RefreshSessionCancellationTimeoutNotReachedError ||
-      error instanceof UserDeletionTimeoutNotReachedError
+      error instanceof RefreshSessionCancellationTimeoutNotReachedError
     ) {
       body.allowedAt = error.allowedAt.getTime();
     } else if (

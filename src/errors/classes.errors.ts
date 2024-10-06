@@ -2,16 +2,20 @@ import {
   MAX_REFRESH_TOKENS_FOR_USER,
   REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS
 } from '#/constants/auth.constants';
-import { USER_DELETION_TIMEOUT_HOURS } from '#/constants/user.constants';
-import { TTokenType } from '#/types/token.types';
+import { TokenType } from '#/types/token.types';
 import { capitalizeFirstLetter } from '#/utils/capitalize-first-letter.utility';
 
 export class UnexpectedError extends Error {
-  constructor({ message, cause }: { message: string; cause?: unknown }) {
-    super(message, { cause });
+  constructor(error: string | Error) {
+    if (typeof error === 'string') {
+      super(error);
+    } else {
+      super(error.message, { cause: error });
+    }
     this.name = this.constructor.name;
   }
 }
+
 export class ApiError extends Error {
   status: number;
 
@@ -35,11 +39,25 @@ export class BadRequestError extends ApiError {
     super({ status: 400, message });
   }
 }
+
+export class JsonSyntaxError extends BadRequestError {
+  constructor({ message }: { message: string }) {
+    super({ message });
+  }
+}
+
+export class CookieSyntaxError extends BadRequestError {
+  constructor({ message }: { message: string }) {
+    super({ message });
+  }
+}
+
 export class UnauthorizedError extends ApiError {
   constructor({ message }: { message: string }) {
     super({ status: 401, message });
   }
 }
+
 export class TokenExpiredError extends ApiError {
   expiredAt: Date;
 
@@ -47,7 +65,7 @@ export class TokenExpiredError extends ApiError {
     tokenType,
     expiredAt
   }: {
-    tokenType: TTokenType;
+    tokenType: TokenType;
     expiredAt: Date;
   }) {
     super({
@@ -59,7 +77,7 @@ export class TokenExpiredError extends ApiError {
 }
 
 export class TokenVerifyError extends UnauthorizedError {
-  constructor({ tokenType }: { tokenType: TTokenType }) {
+  constructor({ tokenType }: { tokenType: TokenType }) {
     super({
       message: `${capitalizeFirstLetter(tokenType)} token verify error`
     });
@@ -67,7 +85,7 @@ export class TokenVerifyError extends UnauthorizedError {
 }
 
 export class InvalidTokenPayloadError extends UnauthorizedError {
-  constructor({ tokenType }: { tokenType: TTokenType }) {
+  constructor({ tokenType }: { tokenType: TokenType }) {
     super({
       message: `Invalid ${capitalizeFirstLetter(tokenType)} token payload`
     });
@@ -101,37 +119,12 @@ export class RefreshSessionInvalidSignatureError extends UnauthorizedError {
 export class RefreshSessionCancellationTimeoutNotReachedError extends ApiError {
   allowedAt: Date;
 
-  constructor({ createdAt }: { createdAt: Date }) {
+  constructor({ allowedAt }: { allowedAt: Date }) {
     super({
       status: 403,
-      message: `You cannot cancel the session until the required ${REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS}-hour period has elapsed`
+      message: `You cannot cancel other sessions until the required ${REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS}-hour period has elapsed`
     });
-    this.allowedAt = this.calculateAllowedAt(createdAt);
-  }
-
-  private calculateAllowedAt(createdAt: Date) {
-    return new Date(
-      createdAt.getTime() +
-        REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS * 60 * 60 * 1000
-    );
-  }
-}
-
-export class UserDeletionTimeoutNotReachedError extends ApiError {
-  allowedAt: Date;
-
-  constructor({ createdAt }: { createdAt: Date }) {
-    super({
-      status: 403,
-      message: `You cannot delete your account until the required ${USER_DELETION_TIMEOUT_HOURS}-hour period has elapsed`
-    });
-    this.allowedAt = this.calculateAllowedAt(createdAt);
-  }
-
-  private calculateAllowedAt(createdAt: Date) {
-    return new Date(
-      createdAt.getTime() + USER_DELETION_TIMEOUT_HOURS * 60 * 60 * 1000
-    );
+    this.allowedAt = allowedAt;
   }
 }
 
@@ -205,16 +198,16 @@ export class ValidationError extends ApiError {
   errors: string[];
 
   constructor({ errors, cause }: { errors: string[]; cause?: unknown }) {
-    super({ status: 400, cause, message: 'ValidationError' });
+    super({ status: 400, cause, message: 'Validation error occurred' });
     this.errors = errors;
   }
 }
-export class ActivationError extends ApiError {
+export class CodeError extends ApiError {
   constructor({ status, message }: { status: number; message: string }) {
     super({ status, message });
   }
 }
-export class ActivationMaxAttemptsExceededError extends ActivationError {
+export class CodeMaxAttemptsExceededError extends CodeError {
   constructor() {
     super({
       status: 429,
@@ -222,7 +215,7 @@ export class ActivationMaxAttemptsExceededError extends ActivationError {
     });
   }
 }
-export class ActivationRateLimitError extends ActivationError {
+export class CodeRateLimitError extends CodeError {
   allowedAt: Date;
 
   constructor({ allowedAt }: { allowedAt: Date }) {
@@ -233,21 +226,21 @@ export class ActivationRateLimitError extends ActivationError {
     this.allowedAt = allowedAt;
   }
 }
-export class ActivationCodeNotFoundOrExpiredError extends ActivationError {
+export class CodeNotFoundOrExpiredError extends CodeError {
   constructor() {
     super({
       status: 404,
-      message: 'Activation code not found or expired'
+      message: 'Verification code not found or expired'
     });
   }
 }
-export class ActivationCodeIncorrectError extends ActivationError {
+export class CodeIncorrectError extends CodeError {
   attemptsLeft: number;
 
   constructor({ attemptsLeft }: { attemptsLeft: number }) {
     super({
       status: 400,
-      message: `Incorrect code. Attempts left: ${attemptsLeft}`
+      message: `Verification code incorrect. Attempts left: ${attemptsLeft}`
     });
     this.attemptsLeft = attemptsLeft;
   }

@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
-import { z } from 'zod';
 import { v4 as uuid } from 'uuid';
+import { z } from 'zod';
 
 import { CONFIG } from '#config';
 import {
@@ -15,6 +15,10 @@ import {
   UnexpectedError
 } from '#/errors/classes.errors';
 import { redis } from '#/providers';
+import {
+  AccessTokenPayloadSchema,
+  RefreshTokenPayloadSchema
+} from '#/schemas/token.schemas';
 import {
   TAddRefreshSession,
   TDeleteAllUserRefreshSessions,
@@ -33,10 +37,6 @@ import {
   TVerifyAccessToken,
   TVerifyRefreshToken
 } from '#/types/token.types';
-import {
-  AccessTokenPayloadSchema,
-  RefreshTokenPayloadSchema
-} from '#/schemas/token.schemas';
 
 export class TokenService {
   private static async validateTokenPayload<T extends z.AnyZodObject>({
@@ -69,11 +69,7 @@ export class TokenService {
             return reject(new UnexpectedError(error));
           }
           if (token === undefined) {
-            return reject(
-              new UnexpectedError({
-                message: 'Token is undefined'
-              })
-            );
+            return reject(new UnexpectedError('Token is undefined'));
           }
           return resolve(token);
         }
@@ -105,11 +101,7 @@ export class TokenService {
           return reject(new UnexpectedError(error));
         }
         if (!decoded) {
-          return reject(
-            new UnexpectedError({
-              message: 'Decoded token is undefined'
-            })
-          );
+          return reject(new UnexpectedError('Decoded token is undefined'));
         }
         const validatedPayload = await this.validateTokenPayload({
           schema,
@@ -128,7 +120,7 @@ export class TokenService {
   private static jwtDecode({ token }: TJwtDecode) {
     const decoded = jwt.decode(token, { complete: true });
     if (!decoded) {
-      throw new UnexpectedError({ message: 'Token has not been decoded' });
+      throw new UnexpectedError('Token has not been decoded');
     }
     return decoded;
   }
