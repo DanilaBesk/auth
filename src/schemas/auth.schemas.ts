@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import {
-  ACTIVATION_CODE,
+  VERIFICATION_CODE,
   AUTHORIZATION_HEADER,
   EMAIL,
   FINGERPRINT,
@@ -15,7 +15,7 @@ export const RegistrationSchema = z.object({
   body: z.object({
     email: EMAIL,
     password: PASSWORD,
-    code: ACTIVATION_CODE,
+    code: VERIFICATION_CODE,
     fingerprint: FINGERPRINT
   }),
   ip: IP,

@@ -1,16 +1,12 @@
 import { z } from 'zod';
 
-import { Role } from '@prisma/client';
-import { createValidationOptions } from '#/schemas/utils/create-validation-options.utility';
-import {
-  ACTIVATION_CODE_LENGTH,
-  CHANGE_EMAIL_CODE_LENGTH,
-  CHANGE_PASSWORD_CODE_LENGTH
-} from '#/constants/user.constants';
 import {
   MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH
 } from '#/constants/auth.constants';
+import { CODE_LENGTH } from '#/constants/code.constants';
+import { createValidationOptions } from '#/schemas/utils/create-validation-options.utility';
+import { Role } from '@prisma/client';
 
 export const USER_ID = z
   .string(createValidationOptions('id', 'string'))
@@ -45,26 +41,9 @@ export const ROLE = z.enum(Object.keys(Role) as [keyof typeof Role], {
   }
 });
 
-export const ACTIVATION_CODE = z
-  .string(createValidationOptions('activation code', 'string'))
-  .refine(
-    (str) => str.length === ACTIVATION_CODE_LENGTH,
-    'Invalid activation code'
-  );
-
-export const CHANGE_EMAIL_CODE = z
-  .string(createValidationOptions('change email code', 'string'))
-  .refine(
-    (str) => str.length === CHANGE_EMAIL_CODE_LENGTH,
-    'Invalid change email code'
-  );
-
-export const CHANGE_PASSWORD_CODE = z
-  .string(createValidationOptions('change password code', 'string'))
-  .refine(
-    (str) => str.length === CHANGE_PASSWORD_CODE_LENGTH,
-    'Invalid change password code'
-  );
+export const VERIFICATION_CODE = z
+  .string(createValidationOptions('verification code', 'string'))
+  .refine((str) => str.length === CODE_LENGTH, 'Invalid verification code');
 
 export const IP = z
   .string(createValidationOptions('ip', 'string'))
