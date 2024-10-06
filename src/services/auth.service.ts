@@ -1,12 +1,11 @@
 import * as bcrypt from 'bcrypt';
 
-import { TokenService, UserService } from '#/services';
-import { INITIAL_USER_ROLE } from '#/constants/user.constants';
 import {
   BCRYPT_SALT_ROUNDS,
   MAX_REFRESH_TOKENS_FOR_USER,
   REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS
 } from '#/constants/auth.constants';
+import { INITIAL_USER_ROLE } from '#/constants/user.constants';
 import {
   InvalidPasswordError,
   MaxRefreshSessionsExceededError,
@@ -19,6 +18,7 @@ import {
   UserEmailNotFoundError,
   UserIdNotFoundError
 } from '#/errors/classes.errors';
+import { TokenService, UserService } from '#/services';
 import {
   TCheckPassword,
   TLogin,
@@ -74,7 +74,7 @@ export class AuthService {
       throw new UserEmailConflictError();
     }
 
-    await UserService.verifyActivationCode({ email, code });
+    await UserService.verifyUserActivationCode({ email, code });
 
     const hashPassword = await this.makeHashPassword({ password });
     const user = await UserService.createUser({
@@ -168,13 +168,13 @@ export class AuthService {
       throw new RefreshSessionNotFoundOrExpiredError();
     }
 
-    const cancellationTimeout =
+    const allowedAt =
+      currentSession.createdAt +
       REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS * 60 * 60 * 1000;
-    const timeSinceCreation = Date.now() - currentSession.createdAt;
 
-    if (cancellationTimeout > timeSinceCreation) {
+    if (Date.now() < allowedAt) {
       throw new RefreshSessionCancellationTimeoutNotReachedError({
-        createdAt: new Date(currentSession.createdAt)
+        allowedAt: new Date(allowedAt)
       });
     }
 
@@ -195,13 +195,13 @@ export class AuthService {
       throw new RefreshSessionNotFoundOrExpiredError();
     }
 
-    const cancellationTimeout =
+    const allowedAt =
+      currentSession.createdAt +
       REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS * 60 * 60 * 1000;
-    const timeSinceCreation = Date.now() - currentSession.createdAt;
 
-    if (cancellationTimeout > timeSinceCreation) {
+    if (Date.now() < allowedAt) {
       throw new RefreshSessionCancellationTimeoutNotReachedError({
-        createdAt: new Date(currentSession.createdAt)
+        allowedAt: new Date(allowedAt)
       });
     }
 
