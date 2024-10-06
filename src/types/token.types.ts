@@ -5,7 +5,7 @@ import {
   RefreshTokenPayloadSchema
 } from '#/schemas/token.schemas';
 
-export type TTokenType = 'access' | 'refresh';
+export type TokenType = 'access' | 'refresh';
 
 type TAccessTokenPayloadSchema = z.infer<typeof AccessTokenPayloadSchema>;
 
@@ -37,14 +37,14 @@ export type TJwtSign = {
 export type TValidateTokenPayload<T extends z.AnyZodObject> = {
   payload: unknown;
   schema: T;
-  tokenType: TTokenType;
+  tokenType: TokenType;
 };
 
 export type TJwtVerify<T extends z.AnyZodObject> = {
   token: string;
   secret: string;
   schema: T;
-  tokenType: TTokenType;
+  tokenType: TokenType;
 };
 
 export type TJwtDecode = {
