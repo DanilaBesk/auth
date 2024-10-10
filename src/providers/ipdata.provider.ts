@@ -2,13 +2,16 @@ import fetch from 'node-fetch';
 import { LRUCache } from 'lru-cache';
 
 import { CONFIG } from '#config';
+import { z } from 'zod';
 
-export type TIpdata = {
-  city: string | null;
-  country_name: string;
-  country_code: string;
-  emoji_flag: string;
-};
+const IpdataSchema = z.object({
+  city: z.string().nullable(),
+  country_name: z.string(),
+  country_code: z.string().length(2),
+  emoji_flag: z.string().emoji()
+});
+
+export type TIpdata = z.infer<typeof IpdataSchema>;
 
 class IpData {
   private cache: LRUCache<string, TIpdata>;
@@ -39,11 +42,17 @@ class IpData {
         return null;
       }
 
-      const data = (await response.json()) as TIpdata;
+      const json = await response.json();
 
-      this.cache.set(ip, data);
+      const result = await IpdataSchema.safeParseAsync(json);
 
-      return data;
+      if (!result.success) {
+        return null;
+      }
+
+      this.cache.set(ip, result.data);
+
+      return result.data;
     } catch (error) {
       return null;
     }
