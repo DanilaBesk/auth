@@ -20,7 +20,7 @@ export const getEmailChangeCodeHtml = ({
         padding: 20px;
       }
       .container {
-        max-width: 600px;
+        max-width: 500px;
         margin: 0 auto;
         background: #ffffff;
         padding: 30px;
