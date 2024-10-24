@@ -5,53 +5,53 @@ config();
 
 const portSchema = z.preprocess(
   (data) => parseInt(String(data), 10),
-  z.number()
+  z.number().min(0).max(65535)
 );
 
-const configSchema = z.object({
-  DATABASE_URL: z.string(),
+const protocolSchema = z.union([z.literal('http'), z.literal('https')]);
 
-  JWT_ACCESS_SECRET: z.string(),
-  JWT_REFRESH_SECRET: z.string(),
+export const CONFIG = z
+  .object({
+    DATABASE_URL: z.string().url(),
 
-  CLIENT_HOST: z.string(),
-  CLIENT_PORT: portSchema,
+    JWT_ACCESS_SECRET: z.string(),
+    JWT_REFRESH_SECRET: z.string(),
 
-  APP_HOST: z.string(),
-  APP_PORT: portSchema,
+    CLIENT_PROTOCOL: protocolSchema,
+    CLIENT_HOST: z.string(),
+    CLIENT_PORT: portSchema,
 
-  REDIS_URL: z.string(),
+    APP_PROTOCOL: protocolSchema,
+    APP_HOST: z.string(),
+    APP_PORT: portSchema,
 
-  SMTP_HOST: z.string(),
-  SMTP_PORT: portSchema,
-  SMTP_USER: z.string(),
-  SMTP_PASSWORD: z.string(),
+    REDIS_URL: z.string().url(),
 
-  IP_DATA_KEY: z.string(),
+    SMTP_HOST: z.string(),
+    SMTP_PORT: portSchema,
+    SMTP_USER: z.string(),
+    SMTP_PASSWORD: z.string(),
 
-  NODE_ENV: z.enum(['development', 'production', 'test'])
-});
+    GOOGLE_OAUTH_CLIENT_ID: z.string(),
+    GOOGLE_OAUTH_CLIENT_SECRET: z.string(),
+    GOOGLE_OAUTH_REDIRECT_PATH: z.string(),
 
-export const CONFIG: z.infer<typeof configSchema> = configSchema.parse({
-  DATABASE_URL: process.env.DATABASE_URL,
+    GITHUB_OAUTH_CLIENT_ID: z.string(),
+    GITHUB_OAUTH_CLIENT_SECRET: z.string(),
+    GITHUB_OAUTH_REDIRECT_PATH: z.string(),
 
-  JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET,
-  JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
+    YANDEX_OAUTH_CLIENT_ID: z.string(),
+    YANDEX_OAUTH_CLIENT_SECRET: z.string(),
+    YANDEX_OAUTH_REDIRECT_PATH: z.string(),
 
-  CLIENT_HOST: process.env.CLIENT_HOST,
-  CLIENT_PORT: process.env.CLIENT_PORT,
+    IP_DATA_KEY: z.string(),
 
-  APP_HOST: process.env.APP_HOST,
-  APP_PORT: process.env.APP_PORT,
+    COOKIE_SECRET: z.string(),
 
-  REDIS_URL: process.env.REDIS_URL,
+    NODE_ENV: z.enum(['development', 'production', 'test'])
+  })
+  .parse(process.env);
 
-  SMTP_HOST: process.env.SMTP_HOST,
-  SMTP_PORT: process.env.SMTP_PORT,
-  SMTP_USER: process.env.SMTP_USER,
-  SMTP_PASSWORD: process.env.SMTP_PASSWORD,
+export const CLIENT_URL = `${CONFIG.CLIENT_PROTOCOL}://${CONFIG.CLIENT_HOST}:${CONFIG.CLIENT_PORT}`;
 
-  IP_DATA_KEY: process.env.IP_DATA_KEY,
-
-  NODE_ENV: process.env.NODE_ENV
-});
+export const APP_URL = `${CONFIG.APP_PROTOCOL}://${CONFIG.APP_HOST}:${CONFIG.APP_PORT}`;
