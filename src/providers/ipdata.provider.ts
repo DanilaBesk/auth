@@ -1,8 +1,8 @@
-import fetch from 'node-fetch';
+import axios from 'axios';
 import { LRUCache } from 'lru-cache';
+import { z } from 'zod';
 
 import { CONFIG } from '#config';
-import { z } from 'zod';
 
 const IpdataSchema = z.object({
   city: z.string().nullable(),
@@ -19,7 +19,7 @@ class IpData {
   constructor() {
     this.cache = new LRUCache<string, TIpdata>({
       max: 5000,
-      ttl: 1000 * 60 * 60
+      ttl: 1000 * 60 * 60 * 2
     });
   }
 
@@ -29,22 +29,19 @@ class IpData {
     }
 
     try {
-      const url = `https://api.ipdata.co/${ip}?api-key=${CONFIG.IP_DATA_KEY}&fields=city,country_name,country_code,emoji_flag`;
+      const url = `https://api.ipdata.co/${ip}`;
 
-      const response = await fetch(url, {
-        method: 'GET',
+      const response = await axios.get(url, {
         headers: {
-          accept: 'application/json'
+          Accept: 'application/json'
+        },
+        params: {
+          'api-key': CONFIG.IP_DATA_KEY,
+          fields: 'city,country_name,country_code,emoji_flag'
         }
       });
 
-      if (!response.ok) {
-        return null;
-      }
-
-      const json = await response.json();
-
-      const result = await IpdataSchema.safeParseAsync(json);
+      const result = await IpdataSchema.safeParseAsync(response.data);
 
       if (!result.success) {
         return null;
@@ -53,7 +50,7 @@ class IpData {
       this.cache.set(ip, result.data);
 
       return result.data;
-    } catch (error) {
+    } catch (_) {
       return null;
     }
   }
