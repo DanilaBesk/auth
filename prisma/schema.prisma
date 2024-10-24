@@ -8,15 +8,49 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid()) @db.Uuid
-  email     String   @unique
-  password  String
-  role      Role
+  id            String          @id @default(uuid()) @db.Uuid
+  firstName     String
+  lastName      String
+  email         String          @unique
+  password      String?
+  role          Role
+  OAuthProvider OAuthProvider[]
+
+  hasImage                 Boolean
+  avatarFilename           String  @unique
+  avatarBackgroundFilename String  @unique
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
+model OAuthProvider {
+  id            String        @id @default(uuid()) @db.Uuid
+  oauthStrategy OAuthStrategy
+
+  providerUserId String
+  email          String?
+  firstName      String?
+  lastName       String?
+  userName       String?
+  avatarUrl      String?
+
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  linkedAt  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([oauthStrategy, providerUserId])
+}
+
 enum Role {
-  USER
-  ADMIN
+  user
+  admin
+}
+
+enum OAuthStrategy {
+  github
+  google
+  yandex
 }
