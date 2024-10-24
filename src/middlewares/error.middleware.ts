@@ -17,7 +17,6 @@ import {
 } from '#/errors/classes.errors';
 import { CONFIG } from '#config';
 import { Prisma } from '@prisma/client';
-import { MulterError } from 'multer';
 
 const isPrismaError = (error: unknown): boolean => {
   return (
@@ -38,7 +37,7 @@ export function ErrorMiddleware(
   const defaultName = 'InternalError';
 
   let status = defaultStatus;
-  const body: Record<string, any> = {
+  const body: Record<string, unknown> = {
     name: defaultName,
     message: defaultMessage
   };
@@ -60,11 +59,13 @@ export function ErrorMiddleware(
       body.expiredAt = error.expiredAt.getTime();
     } else if (error instanceof OAuthError) {
       body.strategy = error.strategy;
-    } else if (error instanceof FileExtensionError) {
-      body.allowedExtensions = error.allowedExtensions;
-    } else if (error instanceof FileLimitError) {
-      res.setHeader('Max-File-Size', error.maxFileBytes);
-      body.maxFileBytes = error.maxFileBytes;
+    } else if (error instanceof FileError) {
+      if (error instanceof FileExtensionError) {
+        body.allowedExtensions = error.allowedExtensions;
+      } else if (error instanceof FileLimitError) {
+        res.setHeader('Max-File-Size', error.maxFileBytes);
+        body.maxFileBytes = error.maxFileBytes;
+      }
     }
   } else if (error instanceof UnexpectedError || isPrismaError(error)) {
     status = defaultStatus;

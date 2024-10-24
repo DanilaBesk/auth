@@ -242,9 +242,9 @@ export class RouteNotFoundError extends ApiError {
 }
 
 export class ValidationError extends ApiError {
-  errors: any[];
+  errors: unknown[];
 
-  constructor({ errors, cause }: { errors: any[]; cause?: unknown }) {
+  constructor({ errors, cause }: { errors: unknown[]; cause?: unknown }) {
     super({ status: 400, cause, message: 'Validation error occurred.' });
     this.errors = errors;
   }
