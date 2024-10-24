@@ -6,5 +6,5 @@ export function RouteNotFoundMiddleware(
   res: Response,
   next: NextFunction
 ) {
-  next(new RouteNotFoundError({ url: req.url, method: req.method }));
+  next(new RouteNotFoundError());
 }
