@@ -4,29 +4,29 @@ import { NextFunction, Request, Response } from 'express';
 
 import {
   ApiError,
-  InvalidPasswordError,
-  InvalidUserCredentialsError,
-  RefreshSessionCancellationTimeoutNotReachedError,
-  RouteNotFoundError,
   TokenExpiredError,
   UnexpectedError,
-  UserEmailNotFoundError,
-  UserIdNotFoundError,
   ValidationError,
   CodeError,
   CodeIncorrectError,
-  CodeRateLimitError
+  CodeRateLimitError,
+  OAuthError,
+  FileError,
+  FileExtensionError,
+  FileLimitError
 } from '#/errors/classes.errors';
 import { CONFIG } from '#config';
 import { Prisma } from '@prisma/client';
+import { MulterError } from 'multer';
 
-const isDatabaseError = (error: unknown): boolean => {
+const isPrismaError = (error: unknown): boolean => {
   return (
     error instanceof Prisma.PrismaClientKnownRequestError ||
     error instanceof Prisma.PrismaClientUnknownRequestError ||
     error instanceof Prisma.PrismaClientValidationError
   );
 };
+
 export function ErrorMiddleware(
   error: Error,
   req: Request,
@@ -34,11 +34,11 @@ export function ErrorMiddleware(
   next: NextFunction
 ) {
   const defaultStatus = 500;
-  const defaultMessage = 'Something went wrong. Please try again later';
+  const defaultMessage = 'Something went wrong. Please try again later.';
   const defaultName = 'InternalError';
 
   let status = defaultStatus;
-  const body: Record<string, string | number | string[]> = {
+  const body: Record<string, any> = {
     name: defaultName,
     message: defaultMessage
   };
@@ -58,25 +58,15 @@ export function ErrorMiddleware(
       }
     } else if (error instanceof TokenExpiredError) {
       body.expiredAt = error.expiredAt.getTime();
-    } else if (
-      error instanceof RefreshSessionCancellationTimeoutNotReachedError
-    ) {
-      body.allowedAt = error.allowedAt.getTime();
-    } else if (
-      CONFIG.NODE_ENV === 'production' &&
-      (error instanceof InvalidPasswordError ||
-        error instanceof UserEmailNotFoundError ||
-        error instanceof UserIdNotFoundError)
-    ) {
-      const replacedError = new InvalidUserCredentialsError();
-      body.message = replacedError.message;
-      status = replacedError.status;
-      body.name = replacedError.name;
-    } else if (error instanceof RouteNotFoundError) {
-      body.url = error.url;
-      body.method = error.method;
+    } else if (error instanceof OAuthError) {
+      body.strategy = error.strategy;
+    } else if (error instanceof FileExtensionError) {
+      body.allowedExtensions = error.allowedExtensions;
+    } else if (error instanceof FileLimitError) {
+      res.setHeader('Max-File-Size', error.maxFileBytes);
+      body.maxFileBytes = error.maxFileBytes;
     }
-  } else if (error instanceof UnexpectedError || isDatabaseError(error)) {
+  } else if (error instanceof UnexpectedError || isPrismaError(error)) {
     status = defaultStatus;
     body.name = defaultName;
     body.message = defaultMessage;

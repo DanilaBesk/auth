@@ -1,8 +1,5 @@
-import {
-  MAX_REFRESH_TOKENS_FOR_USER,
-  REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS
-} from '#/constants/auth.constants';
-import { TokenType } from '#/types/token.types';
+import { TOAuthStrategy } from '#/types/oauth.types';
+import { TToken } from '#/types/token.types';
 import { capitalizeFirstLetter } from '#/utils/capitalize-first-letter.utility';
 
 export class UnexpectedError extends Error {
@@ -58,6 +55,33 @@ export class UnauthorizedError extends ApiError {
   }
 }
 
+export class OAuthError extends ApiError {
+  strategy: TOAuthStrategy;
+
+  constructor({
+    status,
+    message,
+    strategy
+  }: {
+    status: number;
+    message: string;
+    strategy: TOAuthStrategy;
+  }) {
+    super({ status, message });
+    this.strategy = strategy;
+  }
+}
+
+export class OAuthStateMismatchError extends OAuthError {
+  constructor({ strategy }: { strategy: TOAuthStrategy }) {
+    super({
+      status: 400,
+      message: `OAuth state mismatch for provider ${strategy}. The state returned from the provider does not match the state stored locally.`,
+      strategy
+    });
+  }
+}
+
 export class TokenExpiredError extends ApiError {
   expiredAt: Date;
 
@@ -65,11 +89,11 @@ export class TokenExpiredError extends ApiError {
     tokenType,
     expiredAt
   }: {
-    tokenType: TokenType;
+    tokenType: TToken;
     expiredAt: Date;
   }) {
     super({
-      message: `${capitalizeFirstLetter(tokenType)} token expired`,
+      message: `${capitalizeFirstLetter(tokenType)} token has expired.`,
       status: 419
     });
     this.expiredAt = expiredAt;
@@ -77,17 +101,17 @@ export class TokenExpiredError extends ApiError {
 }
 
 export class TokenVerifyError extends UnauthorizedError {
-  constructor({ tokenType }: { tokenType: TokenType }) {
+  constructor({ tokenType }: { tokenType: TToken }) {
     super({
-      message: `${capitalizeFirstLetter(tokenType)} token verify error`
+      message: `${capitalizeFirstLetter(tokenType)} token verify error.`
     });
   }
 }
 
 export class InvalidTokenPayloadError extends UnauthorizedError {
-  constructor({ tokenType }: { tokenType: TokenType }) {
+  constructor({ tokenType }: { tokenType: TToken }) {
     super({
-      message: `Invalid ${capitalizeFirstLetter(tokenType)} token payload`
+      message: `Invalid ${capitalizeFirstLetter(tokenType)} token payload.`
     });
   }
 }
@@ -95,15 +119,7 @@ export class InvalidTokenPayloadError extends UnauthorizedError {
 export class RefreshSessionNotFoundOrExpiredError extends UnauthorizedError {
   constructor() {
     super({
-      message: 'Refresh session not found or has expired'
-    });
-  }
-}
-
-export class RefreshSessionInvalidFingerprintError extends UnauthorizedError {
-  constructor() {
-    super({
-      message: 'Invalid refresh session. Wrong fingerprint'
+      message: 'Refresh session not found or has expired.'
     });
   }
 }
@@ -111,136 +127,172 @@ export class RefreshSessionInvalidFingerprintError extends UnauthorizedError {
 export class RefreshSessionInvalidSignatureError extends UnauthorizedError {
   constructor() {
     super({
-      message: 'Invalid refresh session. Wrong refresh token'
+      message: 'Invalid refresh session. Wrong token signature.'
     });
   }
 }
 
-export class RefreshSessionCancellationTimeoutNotReachedError extends ApiError {
-  allowedAt: Date;
-
-  constructor({ allowedAt }: { allowedAt: Date }) {
+export class IncorrectPasswordError extends ApiError {
+  constructor() {
     super({
       status: 403,
-      message: `You cannot cancel other sessions until the required ${REFRESH_SESSION_CANCELLATION_TIMEOUT_HOURS}-hour period has elapsed`
-    });
-    this.allowedAt = allowedAt;
-  }
-}
-
-export class MaxRefreshSessionsExceededError extends ApiError {
-  constructor() {
-    super({
-      status: 429,
-      message: `Cannot create more than ${MAX_REFRESH_TOKENS_FOR_USER} sessions`
+      message: 'Password is incorrect. Try again, or use another method.'
     });
   }
 }
 
-export class InvalidUserCredentialsError extends UnauthorizedError {
-  constructor() {
-    super({
-      message: 'Invalid credentials'
-    });
-  }
-}
-
-export class InvalidPasswordError extends UnauthorizedError {
-  constructor() {
-    super({
-      message: 'Invalid password'
-    });
-  }
-}
-
-export class UserEmailConflictError extends ApiError {
+export class EmailAlreadyTakenError extends ApiError {
   constructor() {
     super({
       status: 409,
-      message: 'User already exists with this email address'
+      message: 'This email address is taken. Please try another.'
     });
   }
 }
 
-export class UserEmailNotFoundError extends ApiError {
+export class InvalidCredentialsError extends ApiError {
+  constructor() {
+    super({
+      status: 401,
+      message: 'Email or password incorrect.'
+    });
+  }
+}
+export class EmailNotFoundError extends ApiError {
   constructor() {
     super({
       status: 404,
-      message: 'User not found with this email address'
+      message: 'Email address not found.'
     });
   }
 }
 
-export class UserIdNotFoundError extends ApiError {
+export class UserNotFoundError extends UnauthorizedError {
   constructor() {
     super({
-      status: 404,
-      message: 'User not found with this ID'
+      message: 'User not found.'
     });
+  }
+}
+
+export class PasswordNotSetError extends BadRequestError {
+  constructor() {
+    super({
+      message: 'No password has been set for this email address.'
+    });
+  }
+}
+
+export class PasswordAlreadySetError extends BadRequestError {
+  constructor() {
+    super({
+      message: 'A password has already been set for this email address.'
+    });
+  }
+}
+
+export class AvatarError extends ApiError {
+  constructor({ message }: { message: string }) {
+    super({
+      status: 400,
+      message
+    });
+  }
+}
+
+export class FileError extends ApiError {
+  constructor({ status, message }: { status: number; message: string }) {
+    super({ status, message });
+  }
+}
+
+export class FileLimitError extends FileError {
+  maxFileBytes: number;
+
+  constructor({ maxFileBytes }: { maxFileBytes: number }) {
+    super({
+      status: 413,
+      message:
+        'File size exceeds the maximum limit. Please upload a smaller file.'
+    });
+    this.maxFileBytes = maxFileBytes;
+  }
+}
+
+export class FileExtensionError extends FileError {
+  allowedExtensions: string[];
+
+  constructor({ allowedExtensions }: { allowedExtensions: string[] }) {
+    super({
+      status: 400,
+      message:
+        'Invalid or undefined file extension. Please ensure the file is a valid file format.'
+    });
+    this.allowedExtensions = allowedExtensions;
   }
 }
 
 export class RouteNotFoundError extends ApiError {
-  url: string;
-  method: string;
-
-  constructor({ url, method }: { url: string; method: string }) {
+  constructor() {
     super({
       status: 404,
-      message: `Route '${url}' not found with method ${method}`
+      message: '404 - not found.'
     });
-    this.url = url;
-    this.method = method;
   }
 }
 
 export class ValidationError extends ApiError {
-  errors: string[];
+  errors: any[];
 
-  constructor({ errors, cause }: { errors: string[]; cause?: unknown }) {
-    super({ status: 400, cause, message: 'Validation error occurred' });
+  constructor({ errors, cause }: { errors: any[]; cause?: unknown }) {
+    super({ status: 400, cause, message: 'Validation error occurred.' });
     this.errors = errors;
   }
 }
+
 export class CodeError extends ApiError {
   constructor({ status, message }: { status: number; message: string }) {
     super({ status, message });
   }
 }
+
 export class CodeMaxAttemptsExceededError extends CodeError {
   constructor() {
     super({
       status: 429,
-      message: 'No attempts left. Please request a new code'
+      message: 'No attempts left. Please request a new code.'
     });
   }
 }
+
 export class CodeRateLimitError extends CodeError {
   allowedAt: Date;
 
   constructor({ allowedAt }: { allowedAt: Date }) {
     super({
       status: 429,
-      message: 'Please wait before requesting a new code'
+      message: 'Please wait before requesting a new code.'
     });
     this.allowedAt = allowedAt;
   }
 }
+
 export class CodeNotFoundOrExpiredError extends CodeError {
   constructor() {
     super({
       status: 404,
-      message: 'Verification code not found or expired'
+      message: 'Verification code not found or expired.'
     });
   }
 }
+
 export class CodeIncorrectError extends CodeError {
   attemptsLeft: number;
 
   constructor({ attemptsLeft }: { attemptsLeft: number }) {
     super({
       status: 400,
-      message: `Verification code incorrect. Attempts left: ${attemptsLeft}`
+      message: `Verification code is incorrect. Attempts left: ${attemptsLeft}.`
     });
     this.attemptsLeft = attemptsLeft;
   }
