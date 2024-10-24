@@ -1,14 +1,26 @@
 import { z } from 'zod';
 
-import { REFRESH_SESSION_ID, ROLE, USER_ID } from '#/schemas/common.schemas';
+import {
+  ROLE,
+  TIMESTAMP_ANY,
+  TIMESTAMP_UNTIL_NOW
+} from '#/schemas/common.schemas';
 
-export const RefreshTokenPayloadSchema = z.object({
-  sub: USER_ID,
-  refreshSessionId: REFRESH_SESSION_ID
-});
+export const RefreshTokenPayloadSchema = z
+  .object({
+    sub: z.string().uuid(),
+    refreshSessionId: z.string(),
+    iat: TIMESTAMP_UNTIL_NOW,
+    exp: TIMESTAMP_ANY
+  })
+  .strict();
 
-export const AccessTokenPayloadSchema = z.object({
-  sub: USER_ID,
-  refreshSessionId: REFRESH_SESSION_ID,
-  role: ROLE
-});
+export const AccessTokenPayloadSchema = z
+  .object({
+    sub: z.string().uuid(),
+    refreshSessionId: z.string(),
+    role: ROLE,
+    iat: TIMESTAMP_UNTIL_NOW,
+    exp: TIMESTAMP_ANY
+  })
+  .strict();

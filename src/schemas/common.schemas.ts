@@ -5,70 +5,36 @@ import {
   MIN_PASSWORD_LENGTH
 } from '#/constants/auth.constants';
 import { CODE_LENGTH } from '#/constants/code.constants';
-import { createValidationOptions } from '#/schemas/utils/create-validation-options.utility';
-import { Role } from '@prisma/client';
+import { OAuthStrategy, Role } from '@prisma/client';
+import {
+  MAX_FIRST_NAME_LENGTH,
+  MAX_LAST_NAME_LENGTH
+} from '#/constants/user.constants';
 
-export const USER_ID = z
-  .string(createValidationOptions('id', 'string'))
-  .uuid('Invalid user id');
+export const FIRST_NAME = z.string().min(1).max(MAX_FIRST_NAME_LENGTH);
 
-export const EMAIL = z
-  .string(createValidationOptions('email', 'string'))
-  .email('Invalid email address');
+export const LAST_NAME = z.string().min(1).max(MAX_LAST_NAME_LENGTH);
 
 export const PASSWORD = z
-  .string(createValidationOptions('password', 'string'))
-  .min(
-    MIN_PASSWORD_LENGTH,
-    `Password must be ${MIN_PASSWORD_LENGTH} or more characters long`
-  )
-  .max(
-    MAX_PASSWORD_LENGTH,
-    `Password must be ${MAX_PASSWORD_LENGTH} or fewer characters long`
-  );
+  .string()
+  .min(MIN_PASSWORD_LENGTH)
+  .max(MAX_PASSWORD_LENGTH);
 
-export const ROLE = z.enum(Object.keys(Role) as [keyof typeof Role], {
-  errorMap: (error, ctx) => {
-    switch (error.code) {
-      case z.ZodIssueCode.invalid_enum_value:
-        return { message: 'Invalid role' };
-      case z.ZodIssueCode.invalid_type:
-        return {
-          message: createValidationOptions('role', 'string').invalid_type_error
-        };
-    }
-    return { message: ctx.defaultError };
-  }
-});
+export const ROLE = z.enum(Object.keys(Role) as [keyof typeof Role]);
 
-export const VERIFICATION_CODE = z
-  .string(createValidationOptions('verification code', 'string'))
-  .refine((str) => str.length === CODE_LENGTH, 'Invalid verification code');
-
-export const IP = z
-  .string(createValidationOptions('ip', 'string'))
-  .ip('Invalid ip');
-
-export const FINGERPRINT = z.string(
-  createValidationOptions('fingerprint', 'string')
+export const OAUTH_STRATEGY = z.enum(
+  Object.keys(OAuthStrategy) as [keyof typeof OAuthStrategy]
 );
 
-export const USER_AGENT_HEADER = z.string(
-  createValidationOptions('user-agent', 'string')
-);
+export const VERIFICATION_CODE = z.string().length(CODE_LENGTH);
+
+export const TIMESTAMP_UNTIL_NOW = z.number().int().min(0).max(Date.now());
+export const TIMESTAMP_ANY = z.number().int().min(0);
 
 export const AUTHORIZATION_HEADER = z
-  .string(createValidationOptions('header authorization', 'string'))
+  .string()
   .refine((header) => {
     const [scheme, token] = header.split(' ');
     return scheme === 'Bearer' && !!token;
   }, 'Invalid authorization header. Expected format: Bearer <token>')
   .transform((header) => header.split(' ')[1]);
-
-export const REFRESH_TOKEN = z.string(
-  createValidationOptions('refresh token', 'string')
-);
-
-export const REFRESH_SESSION_ID = z
-  .string(createValidationOptions('refresh session', 'string'))
-  .uuid('Invalid refreshSessionId');

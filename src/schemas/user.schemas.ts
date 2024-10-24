@@ -1,51 +1,94 @@
 import { z } from 'zod';
 
 import {
-  AUTHORIZATION_HEADER,
   VERIFICATION_CODE,
-  EMAIL,
-  IP
+  PASSWORD,
+  FIRST_NAME,
+  LAST_NAME
 } from '#/schemas/common.schemas';
 
+export const UpdateUserInfoSchema = z.object({
+  body: z
+    .object({
+      firstName: FIRST_NAME,
+      lastName: LAST_NAME
+    })
+    .strict()
+});
+
 export const RequestActivationCodeSchema = z.object({
-  body: z.object({
-    email: EMAIL
-  }),
-  ip: IP
+  body: z
+    .object({
+      email: z.string().email()
+    })
+    .strict(),
+  ip: z.string().ip()
 });
 
 export const RequestEmailChangeCodeSchema = z.object({
-  headers: z.object({
-    authorization: AUTHORIZATION_HEADER
-  }),
-  body: z.object({
-    newEmail: EMAIL
-  }),
-  ip: IP
+  body: z
+    .object({
+      newEmail: z.string().email()
+    })
+    .strict(),
+  ip: z.string().ip()
 });
 
 export const ChangeEmailWithCodeVerificationSchema = z.object({
-  headers: z.object({
-    authorization: AUTHORIZATION_HEADER
-  }),
-  body: z.object({
-    newEmail: EMAIL,
-    code: VERIFICATION_CODE
-  })
+  body: z
+    .object({
+      newEmail: z.string().email(),
+      code: VERIFICATION_CODE
+    })
+    .strict()
 });
 
 export const RequestUserDeletionCodeSchema = z.object({
-  headers: z.object({
-    authorization: AUTHORIZATION_HEADER
-  }),
-  ip: IP
+  ip: z.string().ip()
 });
 
 export const DeleteUserWithCodeVerificationSchema = z.object({
-  headers: z.object({
-    authorization: AUTHORIZATION_HEADER
-  }),
-  body: z.object({
-    code: VERIFICATION_CODE
-  })
+  body: z
+    .object({
+      code: VERIFICATION_CODE
+    })
+    .strict()
+});
+
+export const RequestPasswordResetCodeSchema = z.object({
+  body: z
+    .object({
+      email: z.string().email()
+    })
+    .strict(),
+  ip: z.string().ip()
+});
+
+export const ResetPasswordWithCodeVerificationSchema = z.object({
+  body: z
+    .object({
+      email: z.string().email(),
+      code: VERIFICATION_CODE,
+      newPassword: PASSWORD
+    })
+    .strict()
+});
+
+export const ChangePasswordSchema = z.object({
+  body: z
+    .object({
+      currentPassword: PASSWORD,
+      newPassword: PASSWORD,
+      logoutOtherSessions: z.boolean()
+    })
+    .strict()
+});
+
+export const SetPasswordSchema = z.object({
+  body: z
+    .object({
+      newPassword: PASSWORD,
+      logoutOtherSessions: z.boolean()
+    })
+    .strict()
 });
