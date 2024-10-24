@@ -58,9 +58,10 @@ export class MailService {
       requestIpData,
       requestTime
     };
+
     return await this.sendMail({
       email,
-      subject: 'Активация аккаунта',
+      subject: `${code} - код активации аккаунта`,
       html: getUserActivationCodeHtml(options),
       text: getUserActivationCodeText(options)
     });
@@ -81,7 +82,7 @@ export class MailService {
     };
     return await this.sendMail({
       email,
-      subject: 'Удаление аккаунта',
+      subject: `${code} - код удаления аккаунта`,
       html: getUserDeletionCodeHtml(options),
       text: getUserDeletionCodeText(options)
     });
@@ -103,7 +104,7 @@ export class MailService {
     };
     return await this.sendMail({
       email,
-      subject: 'Изменение почты',
+      subject: `${code} - код смены почты`,
       html: getEmailChangeCodeHtml(options),
       text: getEmailChangeCodeText(options)
     });
@@ -124,7 +125,7 @@ export class MailService {
     };
     return await this.sendMail({
       email,
-      subject: 'Сброс пароля',
+      subject: `${code} - код сброса пароля`,
       html: getPasswordResetCodeHtml(options),
       text: getPasswordResetCodeText(options)
     });
