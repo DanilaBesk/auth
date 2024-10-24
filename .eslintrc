@@ -11,7 +11,11 @@
     "sourceType": "module",
     "ecmaVersion": 2022
   },
-  "extends": ["eslint:recommended", "plugin:promise/recommended"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:promise/recommended"
+  ],
   "rules": {
     //* Avoid Bugs
     "no-undef": "error",
@@ -26,9 +30,14 @@
     "no-useless-concat": "error",
     "no-useless-return": "error",
     "no-constant-condition": "warn",
-    "no-unused-vars": [
-      "warn",
-      { "argsIgnorePattern": "req|res|next|^_", "varsIgnorePattern": "^_" }
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "req|res|next|^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }
     ],
     //* Enhance Readability
     "indent": ["error", 2, { "SwitchCase": 1 }],
