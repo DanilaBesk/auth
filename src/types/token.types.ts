@@ -1,34 +1,14 @@
 import { z } from 'zod';
 
-import {
-  AccessTokenPayloadSchema,
-  RefreshTokenPayloadSchema
-} from '#/schemas/token.schemas';
+import { AccessTokenPayloadSchema } from '#/schemas/token.schemas';
+import { Role } from '@prisma/client';
 
-export type TokenType = 'access' | 'refresh';
+export type TToken = 'access' | 'refresh';
 
-type TAccessTokenPayloadSchema = z.infer<typeof AccessTokenPayloadSchema>;
-
-type TRefreshTokenPayloadSchema = z.infer<typeof RefreshTokenPayloadSchema>;
-
-export type TAccessTokenData = Omit<TAccessTokenPayloadSchema, 'sub'> & {
-  userId: TAccessTokenPayloadSchema['sub'];
-};
-
-export type TRefreshTokenData = Omit<TRefreshTokenPayloadSchema, 'sub'> & {
-  userId: TRefreshTokenPayloadSchema['sub'];
-};
-
-export type TRefreshSession = {
-  tokenSignature: string;
-  ip: string;
-  ua: string;
-  fingerprint: string;
-  createdAt: number;
-};
+export type TAccessTokenPayload = z.infer<typeof AccessTokenPayloadSchema>;
 
 export type TJwtSign = {
-  payload: object;
+  payload?: object;
   secret: string;
   subject: string;
   expiresIn: number;
@@ -37,58 +17,31 @@ export type TJwtSign = {
 export type TValidateTokenPayload<T extends z.AnyZodObject> = {
   payload: unknown;
   schema: T;
-  tokenType: TokenType;
+  tokenType: TToken;
 };
 
 export type TJwtVerify<T extends z.AnyZodObject> = {
   token: string;
   secret: string;
   schema: T;
-  tokenType: TokenType;
+  tokenType: TToken;
 };
 
-export type TJwtDecode = {
+export type TDecodeTokenComplete = {
   token: string;
 };
 
-export type TGetRefreshSessionKey = {
-  userId: string;
+export type TDecodeTokenToJson = {
+  token: string;
 };
 
-export type TMakeAccessToken = TAccessTokenData;
+export type TMakeAccessToken = {
+  userId: string;
+  refreshSessionId: string;
+  role: Role;
+};
 
 export type TMakeRefreshTokenData = {
-  userId: string;
-};
-
-export type TAddRefreshSession = {
-  userId: string;
-  refreshSessionId: string;
-  tokenSignature: string;
-  ip: string;
-  ua: string;
-  fingerprint: string;
-};
-
-export type TGetRefreshSession = {
-  userId: string;
-  refreshSessionId: string;
-};
-
-export type TGetAllUserRefreshSessions = {
-  userId: string;
-};
-
-export type TGetUserRefreshSessionsCount = {
-  userId: string;
-};
-
-export type TDeleteRefreshSession = {
-  userId: string;
-  refreshSessionId: string;
-};
-
-export type TDeleteAllUserRefreshSessions = {
   userId: string;
 };
 
