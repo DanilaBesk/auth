@@ -1,17 +1,11 @@
-import { z } from 'zod';
-import { OAUTH_STRATEGY } from '#/schemas/common.schemas';
+import { OAuthProviderName } from '@prisma/client';
 
-export type TOAuthProviderConstants = {
+export type TProviderConstants = {
   clientId: string;
   clientSecret: string;
-  redirectUri: string;
-  scope: string;
-  authUrl: string;
   tokenUrl: string;
   userDataUrl: string;
 };
-
-export type TOAuthStrategy = z.infer<typeof OAUTH_STRATEGY>;
 
 export type TProviderUserData = {
   providerUserId: string;
@@ -23,7 +17,8 @@ export type TProviderUserData = {
   avatarUrl?: string;
 };
 
-export type TGetOAuthUrl = {
-  state: string;
-  strategy: TOAuthStrategy;
+export type TGetProviderUserData = {
+  providerName: OAuthProviderName;
+  code: string;
+  codeVerifier: string;
 };

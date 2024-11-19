@@ -1,91 +1,40 @@
 import axios from 'axios';
-import { nanoid } from 'nanoid';
+import { OAuthProviderName } from '@prisma/client';
 
-import { CONFIG } from '#config';
-import { OAuthError, UnexpectedError } from '#/errors/classes.errors';
-import {
-  TOAuthProviderConstants,
-  TOAuthStrategy,
-  TProviderUserData
-} from '#/types/oauth.types';
+import { CLIENT_URL } from '#config';
+import { OAuthError } from '#/errors/classes.errors';
+import { TGetProviderUserData, TProviderUserData } from '#/types/oauth.types';
 import { TokenService } from '#/services/token.service';
-import { OAuthStrategy } from '@prisma/client';
+import {
+  ServiceUnavailableError,
+  UnexpectedError
+} from '#/errors/common-classes.errors';
+import { PROVIDERS } from '#/constants/oauth.constants';
 
 export class OAuthService {
-  private static getRedirectUri(path: string) {
-    return `http://${CONFIG.APP_HOST}:${CONFIG.APP_PORT}${path}`;
-  }
-
-  private static providers: Record<TOAuthStrategy, TOAuthProviderConstants> = {
-    google: {
-      clientId: CONFIG.GOOGLE_OAUTH_CLIENT_ID,
-      clientSecret: CONFIG.GOOGLE_OAUTH_CLIENT_SECRET,
-      redirectUri: this.getRedirectUri(CONFIG.GOOGLE_OAUTH_REDIRECT_PATH),
-      scope: 'openid email profile',
-      authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
-      tokenUrl: 'https://oauth2.googleapis.com/token',
-      userDataUrl: 'https://www.googleapis.com/oauth2/v3/userinfo'
-    },
-    github: {
-      clientId: CONFIG.GITHUB_OAUTH_CLIENT_ID,
-      clientSecret: CONFIG.GITHUB_OAUTH_CLIENT_SECRET,
-      redirectUri: this.getRedirectUri(CONFIG.GITHUB_OAUTH_REDIRECT_PATH),
-      scope: 'user:email read:user',
-      authUrl: 'https://github.com/login/oauth/authorize',
-      tokenUrl: 'https://github.com/login/oauth/access_token',
-      userDataUrl: 'https://api.github.com/user'
-    },
-    yandex: {
-      clientId: CONFIG.YANDEX_OAUTH_CLIENT_ID,
-      clientSecret: CONFIG.YANDEX_OAUTH_CLIENT_SECRET,
-      redirectUri: this.getRedirectUri(CONFIG.YANDEX_OAUTH_REDIRECT_PATH),
-      scope: 'login:email login:info login:avatar',
-      authUrl: 'https://oauth.yandex.ru/authorize',
-      tokenUrl: 'https://oauth.yandex.ru/token',
-      userDataUrl: 'https://login.yandex.ru/info'
-    }
-  };
-
-  public static getOAuthUrl({ strategy }: { strategy: TOAuthStrategy }) {
-    const state = nanoid();
-
-    const provider = this.providers[strategy];
-
-    const authUrl = new URL(provider.authUrl);
-
-    authUrl.searchParams.set('state', state);
-    authUrl.searchParams.set('client_id', provider.clientId);
-    authUrl.searchParams.set('scope', provider.scope);
-    authUrl.searchParams.set('redirect_uri', provider.redirectUri);
-
-    if (strategy !== 'github') {
-      authUrl.searchParams.set('response_type', 'code');
-    }
-
-    return { oauthUrl: authUrl.href, state };
-  }
-
   static async getProviderUserData({
-    strategy,
-    code
-  }: {
-    strategy: TOAuthStrategy;
-    code: string;
-  }): Promise<TProviderUserData> {
+    providerName,
+    code,
+    codeVerifier
+  }: TGetProviderUserData): Promise<TProviderUserData> {
     try {
-      const provider = this.providers[strategy];
+      const provider = PROVIDERS[providerName];
 
       const tokenSearchParams = new URLSearchParams();
 
       tokenSearchParams.set('client_id', provider.clientId);
       tokenSearchParams.set('client_secret', provider.clientSecret);
       tokenSearchParams.set('code', code);
+      tokenSearchParams.set('code_verifier', codeVerifier);
 
-      if (strategy !== 'github') {
+      if (providerName !== 'github') {
         tokenSearchParams.set('grant_type', 'authorization_code');
       }
-      if (strategy !== 'yandex') {
-        tokenSearchParams.set('redirect_uri', provider.redirectUri);
+      if (providerName !== 'yandex') {
+        tokenSearchParams.set(
+          'redirect_uri',
+          `${CLIENT_URL}/auth/oauth-callback?providerName=${providerName}`
+        );
       }
 
       const tokenResponse = await axios.post(
@@ -99,10 +48,10 @@ export class OAuthService {
         }
       );
 
-      if (strategy === 'google') {
+      if (providerName === 'google') {
         const idToken = tokenResponse.data.id_token;
 
-        const { payload: decodedIdToken } = TokenService.decodeTokenToJson({
+        const decodedIdToken = TokenService.decodeTokenToJson({
           token: idToken
         });
 
@@ -117,9 +66,10 @@ export class OAuthService {
       } else {
         const accessToken = tokenResponse.data.access_token as string;
 
-        const authorizationType = strategy === 'yandex' ? 'OAuth' : 'Bearer';
+        const authorizationType =
+          providerName === 'yandex' ? 'OAuth' : 'Bearer';
         const acceptType =
-          strategy === 'github'
+          providerName === 'github'
             ? 'application/vnd.github.v3+json'
             : 'application/json';
 
@@ -130,7 +80,7 @@ export class OAuthService {
           }
         });
 
-        if (strategy === 'yandex') {
+        if (providerName === 'yandex') {
           return {
             providerUserId: userDataResponse.data.id,
             email: userDataResponse.data.default_email,
@@ -140,7 +90,7 @@ export class OAuthService {
             userName: userDataResponse.data.login,
             avatarUrl: `https://avatars.yandex.net/get-yapic/${userDataResponse.data.default_avatar_id}/islands-200`
           };
-        } else if (strategy === 'github') {
+        } else if (providerName === 'github') {
           const email = userDataResponse.data.email;
           let emailVerified: boolean | undefined = undefined;
 
@@ -181,15 +131,21 @@ export class OAuthService {
       }
 
       throw new UnexpectedError(
-        `Invalid strategy. Expected one of: ${Object.values(OAuthStrategy).join(',')}, received: ${strategy}.`
+        `Invalid strategy. Expected one of: ${Object.values(OAuthProviderName).join(',')}, received: ${providerName}.`
       );
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        throw new OAuthError({
-          status: error.response.status,
-          message: 'Authentication failed with the OAuth provider.',
-          strategy
-        });
+        const status = error.response.status;
+        if (status >= 400 && status <= 499) {
+          throw new OAuthError({
+            status,
+            message: 'Authentication failed with the OAuth provider.'
+          });
+        } else {
+          throw new ServiceUnavailableError({
+            message: 'Authentication failed with the OAuth provider.'
+          });
+        }
       } else if (error instanceof Error) {
         throw new UnexpectedError(error);
       }
