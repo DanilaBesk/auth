@@ -20,7 +20,7 @@
   "author": "Danila Beskorovaev <danilbeskorovaev546@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "@prisma/client": "^5.10.2",
+    "@prisma/client": "^5.21.1",
     "axios": "^1.7.7",
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.6",
@@ -56,7 +56,7 @@
     "jest": "^29.7.0",
     "jest-mock-extended": "^3.0.7",
     "prettier": "^3.2.5",
-    "prisma": "^5.10.2",
+    "prisma": "^5.21.1",
     "supertest": "^6.3.4",
     "ts-jest": "^29.1.2",
     "tsc-alias": "^1.8.10",
