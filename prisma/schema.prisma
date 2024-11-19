@@ -9,39 +9,32 @@ datasource db {
 
 model User {
   id            String          @id @default(uuid()) @db.Uuid
-  firstName     String
-  lastName      String
-  email         String          @unique
+  firstName     String          @db.VarChar(200)
+  lastName      String          @db.VarChar(200)
+  email         String          @unique @db.VarChar(256)
   password      String?
   role          Role
   OAuthProvider OAuthProvider[]
 
   hasImage                 Boolean
-  avatarFilename           String  @unique
-  avatarBackgroundFilename String  @unique
+  avatarFilename           String  @unique @db.VarChar(50)
+  avatarBackgroundFilename String  @unique @db.VarChar(50)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model OAuthProvider {
-  id            String        @id @default(uuid()) @db.Uuid
-  oauthStrategy OAuthStrategy
-
+  id             String            @id @default(uuid()) @db.Uuid
+  providerName   OAuthProviderName
   providerUserId String
-  email          String?
-  firstName      String?
-  lastName       String?
-  userName       String?
-  avatarUrl      String?
 
   userId String @db.Uuid
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  linkedAt  DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  linkedAt DateTime @default(now())
 
-  @@unique([oauthStrategy, providerUserId])
+  @@unique([providerName, providerUserId])
 }
 
 enum Role {
@@ -49,7 +42,7 @@ enum Role {
   admin
 }
 
-enum OAuthStrategy {
+enum OAuthProviderName {
   github
   google
   yandex
