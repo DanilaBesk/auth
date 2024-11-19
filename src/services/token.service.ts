@@ -11,9 +11,9 @@ import {
 import {
   InvalidTokenPayloadError,
   TokenExpiredError,
-  TokenVerifyError,
-  UnexpectedError
+  TokenVerifyError
 } from '#/errors/classes.errors';
+import { UnexpectedError } from '#/errors/common-classes.errors';
 import {
   AccessTokenPayloadSchema,
   RefreshTokenPayloadSchema
@@ -133,13 +133,9 @@ export class TokenService {
     return decoded;
   }
 
-  static async makeAccessToken({
-    userId,
-    refreshSessionId,
-    role
-  }: TMakeAccessToken) {
+  static async makeAccessToken({ userId, sessionId, role }: TMakeAccessToken) {
     const payload = {
-      refreshSessionId,
+      sessionId,
       role
     };
 
@@ -152,10 +148,10 @@ export class TokenService {
   }
 
   static async makeRefreshTokenData({ userId }: TMakeRefreshTokenData) {
-    const refreshSessionId = nanoid();
+    const sessionId = nanoid();
 
     const payload = {
-      refreshSessionId
+      sessionId
     };
 
     const refreshToken = await this.jwtSign({
@@ -168,7 +164,7 @@ export class TokenService {
       token: refreshToken
     }).signature;
 
-    return { refreshSessionId, refreshToken, tokenSignature };
+    return { sessionId, refreshToken, tokenSignature };
   }
 
   static async verifyRefreshToken({ refreshToken }: TVerifyRefreshToken) {

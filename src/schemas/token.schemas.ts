@@ -9,7 +9,7 @@ import {
 export const RefreshTokenPayloadSchema = z
   .object({
     sub: z.string().uuid(),
-    refreshSessionId: z.string(),
+    sessionId: z.string(),
     iat: TIMESTAMP_UNTIL_NOW,
     exp: TIMESTAMP_ANY
   })
@@ -18,7 +18,7 @@ export const RefreshTokenPayloadSchema = z
 export const AccessTokenPayloadSchema = z
   .object({
     sub: z.string().uuid(),
-    refreshSessionId: z.string(),
+    sessionId: z.string(),
     role: ROLE,
     iat: TIMESTAMP_UNTIL_NOW,
     exp: TIMESTAMP_ANY

@@ -37,7 +37,7 @@ export type TDecodeTokenToJson = {
 
 export type TMakeAccessToken = {
   userId: string;
-  refreshSessionId: string;
+  sessionId: string;
   role: Role;
 };
 
