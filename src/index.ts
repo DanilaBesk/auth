@@ -3,7 +3,7 @@
 import cors from 'cors';
 import express, { Application } from 'express';
 
-import { CONFIG } from '#config';
+import { CLIENT_URL, CONFIG } from '#config';
 import { prisma, redis } from '#/providers';
 import { router } from '#/routes';
 import {
@@ -18,7 +18,7 @@ export const app: Application = express();
 app.use(
   cors({
     credentials: true,
-    origin: `http://${CONFIG.CLIENT_HOST}:${CONFIG.CLIENT_PORT}`,
+    origin: `${CLIENT_URL}`,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Origin', 'Content-Type', 'Authorization', 'Accept'],
     preflightContinue: false,
@@ -26,7 +26,7 @@ app.use(
   })
 );
 app.use(JsonParseMiddleware());
-app.use(CookieParseMiddleware());
+app.use(CookieParseMiddleware(CONFIG.COOKIE_SECRET));
 
 app.use('/api', router);
 
