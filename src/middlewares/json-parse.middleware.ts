@@ -1,5 +1,6 @@
-import { JsonSyntaxError, UnexpectedError } from '#/errors/classes.errors';
 import { NextFunction, Request, Response, json } from 'express';
+import { JsonSyntaxError } from '#/errors/classes.errors';
+import { UnexpectedError } from '#/errors/common-classes.errors';
 
 export const JsonParseMiddleware = (...args: Parameters<typeof json>) => {
   return (req: Request, res: Response, next: NextFunction) => {

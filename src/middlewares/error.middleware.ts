@@ -2,29 +2,21 @@
 
 import { NextFunction, Request, Response } from 'express';
 
+import { REFRESH_COOKIE_OPTIONS } from '#/constants/auth.constants';
 import {
-  ApiError,
-  TokenExpiredError,
-  UnexpectedError,
-  ValidationError,
-  CodeError,
   CodeIncorrectError,
   CodeRateLimitError,
-  OAuthError,
-  FileError,
+  CurrentSessionNotFoundOrExpiredError,
+  CurrentSessionSignatureMismatchError,
+  CurrentUserNotFoundError,
   FileExtensionError,
-  FileLimitError
+  FileLimitError,
+  TOAuthSignUpAttemptRequiredDataError,
+  TokenExpiredError,
+  ValidationError
 } from '#/errors/classes.errors';
+import { ApiError, UnexpectedError } from '#/errors/common-classes.errors';
 import { CONFIG } from '#config';
-import { Prisma } from '@prisma/client';
-
-const isPrismaError = (error: unknown): boolean => {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError ||
-    error instanceof Prisma.PrismaClientUnknownRequestError ||
-    error instanceof Prisma.PrismaClientValidationError
-  );
-};
 
 export function ErrorMiddleware(
   error: Error,
@@ -46,31 +38,31 @@ export function ErrorMiddleware(
     status = error.status;
     body.message = error.message;
     body.name = error.name;
+
     if (error instanceof ValidationError) {
       body.errors = error.errors;
-    } else if (error instanceof CodeError) {
-      if (error instanceof CodeIncorrectError) {
-        body.attemptsLeft = error.attemptsLeft;
-      } else if (error instanceof CodeRateLimitError) {
-        body.allowedAt = error.allowedAt.getTime();
-        res.setHeader('Retry-After', error.allowedAt.toString());
-      }
+    } else if (
+      error instanceof CurrentSessionNotFoundOrExpiredError ||
+      error instanceof CurrentSessionSignatureMismatchError ||
+      error instanceof CurrentUserNotFoundError
+    ) {
+      res.clearCookie('refreshToken', REFRESH_COOKIE_OPTIONS);
+    } else if (error instanceof CodeIncorrectError) {
+      body.attemptsLeft = error.attemptsLeft;
+    } else if (error instanceof CodeRateLimitError) {
+      body.allowedAt = error.allowedAt.getTime();
+      res.setHeader('Retry-After', error.allowedAt.toString());
     } else if (error instanceof TokenExpiredError) {
       body.expiredAt = error.expiredAt.getTime();
-    } else if (error instanceof OAuthError) {
-      body.strategy = error.strategy;
-    } else if (error instanceof FileError) {
-      if (error instanceof FileExtensionError) {
-        body.allowedExtensions = error.allowedExtensions;
-      } else if (error instanceof FileLimitError) {
-        res.setHeader('Max-File-Size', error.maxFileBytes);
-        body.maxFileBytes = error.maxFileBytes;
-      }
+    } else if (error instanceof TOAuthSignUpAttemptRequiredDataError) {
+      body.requiredFields = error.requiredFields;
+      body.codeRequired = error.codeRequired;
+    } else if (error instanceof FileExtensionError) {
+      body.allowedExtensions = error.allowedExtensions;
+    } else if (error instanceof FileLimitError) {
+      body.maxFileBytes = error.maxFileBytes;
+      res.setHeader('Max-File-Size', error.maxFileBytes);
     }
-  } else if (error instanceof UnexpectedError || isPrismaError(error)) {
-    status = defaultStatus;
-    body.name = defaultName;
-    body.message = defaultMessage;
   }
 
   if (CONFIG.NODE_ENV !== 'production') {

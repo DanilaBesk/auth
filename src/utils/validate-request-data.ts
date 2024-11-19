@@ -1,7 +1,8 @@
 import { Request } from 'express';
 import { z } from 'zod';
 
-import { UnexpectedError, ValidationError } from '#/errors/classes.errors';
+import { ValidationError } from '#/errors/classes.errors';
+import { UnexpectedError } from '#/errors/common-classes.errors';
 
 type TLocations =
   | 'body'
