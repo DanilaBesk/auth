@@ -5,11 +5,12 @@ import {
   MIN_PASSWORD_LENGTH
 } from '#/constants/auth.constants';
 import { CODE_LENGTH } from '#/constants/code.constants';
-import { OAuthStrategy, Role } from '@prisma/client';
 import {
+  MAX_EMAIL_LENGTH,
   MAX_FIRST_NAME_LENGTH,
   MAX_LAST_NAME_LENGTH
 } from '#/constants/user.constants';
+import { OAuthProviderName, Role } from '@prisma/client';
 
 export const FIRST_NAME = z.string().min(1).max(MAX_FIRST_NAME_LENGTH);
 
@@ -20,10 +21,12 @@ export const PASSWORD = z
   .min(MIN_PASSWORD_LENGTH)
   .max(MAX_PASSWORD_LENGTH);
 
+export const EMAIL = z.string().email().max(MAX_EMAIL_LENGTH);
+
 export const ROLE = z.enum(Object.keys(Role) as [keyof typeof Role]);
 
-export const OAUTH_STRATEGY = z.enum(
-  Object.keys(OAuthStrategy) as [keyof typeof OAuthStrategy]
+export const OAUTH_PROVIDER_NAME = z.enum(
+  Object.keys(OAuthProviderName) as [keyof typeof OAuthProviderName]
 );
 
 export const VERIFICATION_CODE = z.string().length(CODE_LENGTH);
