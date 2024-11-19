@@ -1,47 +1,93 @@
 import { z } from 'zod';
 
 import {
-  VERIFICATION_CODE,
   AUTHORIZATION_HEADER,
-  PASSWORD,
-  OAUTH_STRATEGY,
+  EMAIL,
   FIRST_NAME,
-  LAST_NAME
+  LAST_NAME,
+  OAUTH_PROVIDER_NAME,
+  PASSWORD,
+  VERIFICATION_CODE
 } from '#/schemas/common.schemas';
 
-export const RegistrationSchema = z.object({
+export const SignUpSchema = z.object({
+  headers: z.object({
+    'user-agent': z.string()
+  }),
+  ip: z.string().ip(),
   body: z
     .object({
       firstName: FIRST_NAME,
       lastName: LAST_NAME,
-      email: z.string().email(),
+      email: EMAIL,
       password: PASSWORD,
       code: VERIFICATION_CODE
     })
-    .strict(),
-  ip: z.string().ip(),
-  headers: z.object({
-    'user-agent': z.string()
-  })
+    .strict()
 });
 
-export const LoginSchema = z.object({
+export const SignInSchema = z.object({
+  headers: z.object({
+    'user-agent': z.string()
+  }),
+  ip: z.string().ip(),
   body: z
     .object({
-      email: z.string().email(),
+      email: EMAIL,
       password: PASSWORD
     })
-    .strict(),
+    .strict()
+});
+
+export const RequestAuthCodeSchema = z.object({
   ip: z.string().ip(),
-  headers: z.object({
-    'user-agent': z.string()
+  body: z
+    .object({
+      email: EMAIL
+    })
+    .strict()
+});
+
+export const RequestOAuthSignInAttemptCodeSchema = z.object({
+  ip: z.string().ip(),
+  params: z.object({
+    attemptId: z.string()
   })
 });
 
-export const OAuthSchema = z.object({
-  query: z
+export const RequestOAuthSignUpAttemptCodeSchema = z.object({
+  ip: z.string().ip(),
+  params: z.object({
+    attemptId: z.string()
+  }),
+  body: z.object({
+    email: z.optional(EMAIL)
+  })
+});
+
+export const SignInByCodeSchema = z.object({
+  headers: z.object({
+    'user-agent': z.string()
+  }),
+  ip: z.string().ip(),
+  body: z
     .object({
-      strategy: OAUTH_STRATEGY
+      email: EMAIL,
+      code: VERIFICATION_CODE
+    })
+    .strict()
+});
+
+export const ResetPasswordSchema = z.object({
+  headers: z.object({
+    'user-agent': z.string()
+  }),
+  ip: z.string().ip(),
+  body: z
+    .object({
+      email: EMAIL,
+      newPassword: PASSWORD,
+      code: VERIFICATION_CODE
     })
     .strict()
 });
@@ -51,25 +97,63 @@ export const OAuthCallbackSchema = z.object({
     'user-agent': z.string()
   }),
   ip: z.string().ip(),
-  signedCookies: z.object({
-    state: z.string()
+  body: z
+    .object({
+      code: z.string(),
+      codeVerifier: z.string(),
+      providerName: OAUTH_PROVIDER_NAME
+    })
+    .strict()
+});
+
+export const OAuthSignUpAttemptSchema = z.object({
+  headers: z.object({
+    'user-agent': z.string()
   }),
-  query: z.object({
-    strategy: OAUTH_STRATEGY,
-    code: z.string(),
-    state: z.string()
+  ip: z.string().ip(),
+  params: z.object({
+    attemptId: z.string()
+  }),
+  body: z
+    .object({
+      email: z.optional(EMAIL),
+      firstName: z.optional(FIRST_NAME),
+      lastName: z.optional(LAST_NAME),
+      code: z.optional(VERIFICATION_CODE)
+    })
+    .strict()
+});
+
+export const OAuthSignInAttemptSchema = z.object({
+  headers: z.object({
+    'user-agent': z.string()
+  }),
+  ip: z.string().ip(),
+  params: z.object({
+    attemptId: z.string()
+  }),
+  body: z
+    .object({
+      code: VERIFICATION_CODE
+    })
+    .strict()
+});
+
+export const SignOutSessionSchema = z.object({
+  params: z.object({
+    sessionId: z.string()
   })
 });
 
 // TODO: Реализация логаута сессий через ссылку в электронном письме
 
 export const RefreshTokensSchema = z.object({
-  cookies: z.object({
-    refreshToken: z.string()
-  }),
-  ip: z.string().ip(),
   headers: z.object({
     'user-agent': z.string()
+  }),
+  ip: z.string().ip(),
+  cookies: z.object({
+    refreshToken: z.string()
   })
 });
 
