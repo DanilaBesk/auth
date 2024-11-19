@@ -1,90 +1,165 @@
-import { ipdata, prisma } from '#/providers';
-import { CodeService, MailService, TokenService } from '#/services';
 import {
-  UserEmailConflictError,
-  UserIdNotFoundError
+  CurrentSessionNotFoundOrExpiredError,
+  CurrentUserNotFoundError,
+  EmailAlreadyTakenError,
+  PasswordAlreadySetError,
+  PasswordNotSetError
 } from '#/errors/classes.errors';
+import { ipdata, prisma } from '#/providers';
 import {
-  TChangeEmailWithCodeVerification,
-  TCreateUser,
+  AuthService,
+  AvatarService,
+  CodeService,
+  MailService,
+  SessionService
+} from '#/services';
+import {
+  TChangeEmail,
+  TChangePassword,
+  TDeleteUser,
+  TDeleteUserAvatar,
   TFindUserByEmail,
   TFindUserById,
-  TGetUserActivationRecordKey,
-  TGetEmailChangeRecordKey,
-  TGetUserDeletionRecordKey,
+  TFindUserWithProvidersByEmail,
+  TFindUserWithProvidersById,
+  TGetUserDataReturned,
+  TGetUserInfo,
+  TGetVerifyCodeKey,
   TRequestEmailChangeCode,
-  TRequestUserActivationCode,
-  TVerifyUserActivationCode,
   TRequestUserDeletionCode,
-  TDeleteUserWithCodeVerification
+  TSetPassword,
+  TUpdateUserInfo,
+  TUploadUserAvatar,
+  TUserDataReturned
 } from '#/types/user.types';
 
 export class UserService {
-  static async createUser({ email, password, role }: TCreateUser) {
-    return await prisma.user.create({
-      data: { email, password, role }
-    });
-  }
-
   static async findUserByEmail({ email }: TFindUserByEmail) {
     return await prisma.user.findUnique({ where: { email } });
+  }
+
+  static async findUserWithProvidersByEmail({
+    email
+  }: TFindUserWithProvidersByEmail) {
+    return await prisma.user.findUnique({
+      where: { email },
+      include: { OAuthProvider: true }
+    });
   }
 
   static async findUserById({ userId }: TFindUserById) {
     return await prisma.user.findUnique({ where: { id: userId } });
   }
 
-  private static getUserActivationRecordKey({
-    email
-  }: TGetUserActivationRecordKey) {
-    return `user-activation:${email}`;
+  static async findUserWithProvidersById({
+    userId
+  }: TFindUserWithProvidersById) {
+    return await prisma.user.findUnique({
+      where: { id: userId },
+      include: { OAuthProvider: true }
+    });
   }
 
-  private static getEmailChangeRecordKey({ userId }: TGetEmailChangeRecordKey) {
+  static getUserDataReturned({
+    user,
+    providers,
+    sessionsInfo
+  }: TGetUserDataReturned): TUserDataReturned {
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      hasImage,
+      createdAt,
+      updatedAt,
+      avatarFilename
+    } = user;
+
+    const externalAccounts = providers.map((provider) => ({
+      id: provider.id,
+      providerName: provider.providerName,
+      linkedAt: provider.linkedAt.getTime()
+    }));
+
+    const avatarUrl = AvatarService.getAvatarUrl({ avatarFilename });
+
+    return {
+      firstName,
+      lastName,
+      email,
+      hasPassword: !!password,
+      hasImage,
+      createdAt: createdAt.getTime(),
+      updatedAt: updatedAt.getTime(),
+      avatarUrl,
+      externalAccounts,
+      sessions: sessionsInfo
+    };
+  }
+
+  static async getUserInfo({ userId, sessionId }: TGetUserInfo) {
+    const [user, sessions] = await Promise.all([
+      this.findUserWithProvidersById({ userId }),
+      SessionService.getAllUserSessions({ userId })
+    ]);
+
+    const currentSession = sessions[sessionId];
+
+    if (!currentSession) {
+      throw new CurrentSessionNotFoundOrExpiredError();
+    }
+
+    if (!user) {
+      throw new CurrentUserNotFoundError();
+    }
+
+    const sessionsInfo = await SessionService.getUserSessionsInfo({
+      sessions
+    });
+
+    const userData = this.getUserDataReturned({
+      user,
+      providers: user.OAuthProvider,
+      sessionsInfo
+    });
+
+    return { user: userData };
+  }
+
+  static async updateUserInfo({
+    userId,
+    firstName,
+    lastName
+  }: TUpdateUserInfo) {
+    const user = await this.findUserById({ userId });
+
+    if (!user) {
+      throw new CurrentUserNotFoundError();
+    }
+
+    if (!user.hasImage) {
+      const { avatarFilename, avatarBackgroundFilename } = user;
+      await AvatarService.createDefaultAvatar({
+        avatarFilename,
+        avatarBackgroundFilename,
+        firstName,
+        lastName
+      });
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { firstName, lastName }
+    });
+  }
+
+  private static getEmailChangeCodeKey({ userId }: TGetVerifyCodeKey) {
     return `email-change:${userId}`;
   }
 
-  private static getUserDeletionRecordKey({
-    userId
-  }: TGetUserDeletionRecordKey) {
+  private static getUserDeletionCodeKey({ userId }: TGetVerifyCodeKey) {
     return `user-deletion:${userId}`;
-  }
-
-  static async requestUserActivationCode({
-    email,
-    ip,
-    requestTime
-  }: TRequestUserActivationCode) {
-    const candidate = await this.findUserByEmail({ email });
-
-    if (candidate) {
-      throw new UserEmailConflictError();
-    }
-
-    const recordKey = this.getUserActivationRecordKey({ email });
-
-    const { code } = await CodeService.createCodeRecord({
-      recordKey
-    });
-
-    const ipData = await ipdata.getIPData(ip);
-
-    await MailService.sendUserActivationCode({
-      code: code,
-      email,
-      requestIp: ip,
-      requestIpData: ipData,
-      requestTime
-    });
-  }
-
-  static async verifyUserActivationCode({
-    email,
-    code
-  }: TVerifyUserActivationCode) {
-    const recordKey = this.getUserActivationRecordKey({ email });
-
-    await CodeService.verifyCodeRecord({ recordKey, code });
   }
 
   static async requestEmailChangeCode({
@@ -93,55 +168,51 @@ export class UserService {
     ip,
     requestTime
   }: TRequestEmailChangeCode) {
-    const [user, userWithNewEmail] = await Promise.all([
+    const [user, newEmailExist] = await Promise.all([
       this.findUserById({ userId }),
       this.findUserByEmail({ email: newEmail })
     ]);
 
     if (!user) {
-      throw new UserIdNotFoundError();
+      throw new CurrentUserNotFoundError();
     }
-    if (userWithNewEmail) {
-      throw new UserEmailConflictError();
+    if (newEmailExist) {
+      throw new EmailAlreadyTakenError();
     }
 
-    const recordKey = this.getEmailChangeRecordKey({ userId });
+    const codeKey = this.getEmailChangeCodeKey({ userId });
 
-    const { code } = await CodeService.createCodeRecord({
-      recordKey
+    const { code } = await CodeService.createCode({
+      idKey: codeKey
     });
 
-    const ipData = await ipdata.getIPData(ip);
+    const requestIpData = await ipdata.getIPData(ip);
 
     await MailService.sendEmailChangeCode({
-      code: code,
+      code,
       email: newEmail,
       requestIp: ip,
-      requestIpData: ipData,
+      requestIpData,
       requestTime
     });
   }
 
-  static async changeEmailWithCodeVerification({
-    userId,
-    newEmail,
-    code
-  }: TChangeEmailWithCodeVerification) {
-    const [user, userWithNewEmail] = await Promise.all([
+  static async changeEmail({ userId, newEmail, code }: TChangeEmail) {
+    const [user, newEmailExist] = await Promise.all([
       this.findUserById({ userId }),
       this.findUserByEmail({ email: newEmail })
     ]);
 
     if (!user) {
-      throw new UserIdNotFoundError();
+      throw new CurrentUserNotFoundError();
     }
-    if (userWithNewEmail) {
-      throw new UserEmailConflictError();
+    if (newEmailExist) {
+      throw new EmailAlreadyTakenError();
     }
 
-    const recordKey = this.getEmailChangeRecordKey({ userId });
+    const codeKey = this.getEmailChangeCodeKey({ userId });
 
-    await CodeService.verifyCodeRecord({ recordKey, code });
+    await CodeService.verifyCode({ idKey: codeKey, code });
 
     await prisma.user.update({
       where: {
@@ -161,45 +232,165 @@ export class UserService {
     const user = await this.findUserById({ userId });
 
     if (!user) {
-      throw new UserIdNotFoundError();
+      throw new CurrentUserNotFoundError();
     }
 
-    const recordKey = this.getUserDeletionRecordKey({ userId });
+    const codeKey = this.getUserDeletionCodeKey({ userId });
 
-    const { code } = await CodeService.createCodeRecord({
-      recordKey
-    });
+    const { code } = await CodeService.createCode({ idKey: codeKey });
 
-    const ipData = await ipdata.getIPData(ip);
+    const requestIpData = await ipdata.getIPData(ip);
 
     await MailService.sendUserDeletionCode({
-      code: code,
+      code,
       email: user.email,
       requestIp: ip,
-      requestIpData: ipData,
+      requestIpData,
       requestTime
     });
   }
 
-  static async deleteUserWithCodeVerification({
-    userId,
-    code
-  }: TDeleteUserWithCodeVerification) {
-    const user = this.findUserById({ userId });
+  static async deleteUser({ userId, code }: TDeleteUser) {
+    const user = await this.findUserById({ userId });
 
     if (!user) {
-      throw new UserIdNotFoundError();
+      throw new CurrentUserNotFoundError();
     }
 
-    const recordKey = this.getUserDeletionRecordKey({ userId });
+    const codeKey = this.getUserDeletionCodeKey({ userId });
 
-    await CodeService.verifyCodeRecord({ recordKey, code });
+    await CodeService.verifyCode({ idKey: codeKey, code });
 
     await Promise.all([
       prisma.user.delete({
         where: { id: userId }
       }),
-      TokenService.deleteAllUserRefreshSessions({ userId })
+      SessionService.deleteAllUserSessions({ userId })
     ]);
+  }
+
+  static async changePassword({
+    userId,
+    sessionId,
+    currentPassword,
+    newPassword,
+    signOutOtherSessions
+  }: TChangePassword) {
+    const user = await this.findUserById({ userId });
+
+    if (!user) {
+      throw new CurrentUserNotFoundError();
+    }
+    if (!user.password) {
+      throw new PasswordNotSetError();
+    }
+
+    await AuthService.checkPassword({
+      password: currentPassword,
+      passwordHash: user.password
+    });
+
+    if (signOutOtherSessions) {
+      await AuthService.signOutAllExceptCurrent({
+        userId,
+        sessionId
+      });
+    }
+    const hashNewPassword = await AuthService.makeHashPassword({
+      password: newPassword
+    });
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashNewPassword }
+    });
+  }
+
+  static async setPassword({
+    userId,
+    sessionId,
+    newPassword,
+    signOutOtherSessions
+  }: TSetPassword) {
+    const user = await this.findUserById({ userId });
+
+    if (!user) {
+      throw new CurrentUserNotFoundError();
+    }
+    if (user.password) {
+      throw new PasswordAlreadySetError();
+    }
+
+    if (signOutOtherSessions) {
+      await AuthService.signOutAllExceptCurrent({ userId, sessionId });
+    }
+
+    const hashNewPassword = await AuthService.makeHashPassword({
+      password: newPassword
+    });
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashNewPassword }
+    });
+  }
+
+  static async uploadUserAvatar({
+    userId,
+    avatarTempFilepath
+  }: TUploadUserAvatar) {
+    const user = await this.findUserById({ userId });
+
+    if (!user) {
+      throw new CurrentUserNotFoundError();
+    }
+
+    const { avatarFilename } = user;
+
+    await AvatarService.saveUserAvatar({
+      avatarFilename,
+      avatarTempFilepath
+    });
+
+    if (!user.hasImage) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { hasImage: true }
+      });
+    }
+
+    const avatarUrl = AvatarService.getAvatarUrl({ avatarFilename });
+
+    return { avatarUrl };
+  }
+
+  static async deleteUserAvatar({ userId }: TDeleteUserAvatar) {
+    const user = await this.findUserById({ userId });
+
+    if (!user) {
+      throw new CurrentUserNotFoundError();
+    }
+
+    const { avatarFilename } = user;
+
+    if (user.hasImage) {
+      const { avatarBackgroundFilename, firstName, lastName } = user;
+
+      await AvatarService.createDefaultAvatar({
+        avatarBackgroundFilename,
+        avatarFilename,
+        firstName,
+        lastName
+      });
+
+      await prisma.user.update({
+        where: { id: userId },
+        data: { hasImage: false }
+      });
+    }
+
+    const avatarUrl = AvatarService.getAvatarUrl({ avatarFilename });
+
+    return { avatarUrl };
   }
 }

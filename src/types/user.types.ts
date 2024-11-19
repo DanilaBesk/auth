@@ -1,40 +1,58 @@
-import { Role } from '@prisma/client';
-
-export type TCreateUser = {
-  email: string;
-  password: string;
-  role: Role;
-};
+import { TSessionInfo } from '#/types/session.types';
+import { OAuthProvider, OAuthProviderName, User } from '@prisma/client';
 
 export type TFindUserByEmail = {
   email: string;
+};
+
+export type TFindUserWithProvidersByEmail = {
+  email: string;
+};
+
+export type TFindUserWithProvidersById = {
+  userId: string;
 };
 
 export type TFindUserById = {
   userId: string;
 };
 
-export type TGetUserActivationRecordKey = {
+export type TUserDataReturned = {
+  firstName: string;
+  lastName: string;
   email: string;
+  hasPassword: boolean;
+  hasImage: boolean;
+  avatarUrl: string;
+  updatedAt: number;
+  createdAt: number;
+  sessions: TSessionInfo[];
+  externalAccounts: {
+    id: string;
+    providerName: OAuthProviderName;
+    linkedAt: number;
+  }[];
 };
 
-export type TGetEmailChangeRecordKey = {
+export type TGetUserDataReturned = {
+  user: User;
+  providers: OAuthProvider[];
+  sessionsInfo: TSessionInfo[];
+};
+
+export type TGetUserInfo = {
+  sessionId: string;
   userId: string;
 };
 
-export type TGetUserDeletionRecordKey = {
+export type TUpdateUserInfo = {
   userId: string;
+  firstName: string;
+  lastName: string;
 };
 
-export type TRequestUserActivationCode = {
-  email: string;
-  ip: string;
-  requestTime: Date;
-};
-
-export type TVerifyUserActivationCode = {
-  email: string;
-  code: string;
+export type TGetVerifyCodeKey = {
+  userId: string;
 };
 
 export type TRequestEmailChangeCode = {
@@ -44,7 +62,7 @@ export type TRequestEmailChangeCode = {
   requestTime: Date;
 };
 
-export type TChangeEmailWithCodeVerification = {
+export type TChangeEmail = {
   userId: string;
   newEmail: string;
   code: string;
@@ -56,7 +74,26 @@ export type TRequestUserDeletionCode = {
   requestTime: Date;
 };
 
-export type TDeleteUserWithCodeVerification = {
+export type TDeleteUser = {
   userId: string;
   code: string;
+};
+
+export type TChangePassword = {
+  userId: string;
+  sessionId: string;
+  currentPassword: string;
+  newPassword: string;
+  signOutOtherSessions: boolean;
+};
+
+export type TSetPassword = Omit<TChangePassword, 'currentPassword'>;
+
+export type TUploadUserAvatar = {
+  userId: string;
+  avatarTempFilepath: string;
+};
+
+export type TDeleteUserAvatar = {
+  userId: string;
 };

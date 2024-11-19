@@ -6,7 +6,7 @@ import { avatarRouter } from '#/routes/avatar.routes';
 
 const router = Router();
 
-router.use('/users', userRouter);
+router.use('/user', userRouter);
 router.use('/auth', authRouter);
 router.use('/avatars', avatarRouter);
 

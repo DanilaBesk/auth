@@ -16,15 +16,6 @@ export const UpdateUserInfoSchema = z.object({
     .strict()
 });
 
-export const RequestActivationCodeSchema = z.object({
-  body: z
-    .object({
-      email: z.string().email()
-    })
-    .strict(),
-  ip: z.string().ip()
-});
-
 export const RequestEmailChangeCodeSchema = z.object({
   body: z
     .object({
@@ -34,20 +25,11 @@ export const RequestEmailChangeCodeSchema = z.object({
   ip: z.string().ip()
 });
 
-export const ChangeEmailWithCodeVerificationSchema = z.object({
-  body: z
-    .object({
-      newEmail: z.string().email(),
-      code: VERIFICATION_CODE
-    })
-    .strict()
-});
-
 export const RequestUserDeletionCodeSchema = z.object({
   ip: z.string().ip()
 });
 
-export const DeleteUserWithCodeVerificationSchema = z.object({
+export const DeleteUserSchema = z.object({
   body: z
     .object({
       code: VERIFICATION_CODE
@@ -55,21 +37,11 @@ export const DeleteUserWithCodeVerificationSchema = z.object({
     .strict()
 });
 
-export const RequestPasswordResetCodeSchema = z.object({
+export const ChangeEmailSchema = z.object({
   body: z
     .object({
-      email: z.string().email()
-    })
-    .strict(),
-  ip: z.string().ip()
-});
-
-export const ResetPasswordWithCodeVerificationSchema = z.object({
-  body: z
-    .object({
-      email: z.string().email(),
-      code: VERIFICATION_CODE,
-      newPassword: PASSWORD
+      newEmail: z.string().email(),
+      code: VERIFICATION_CODE
     })
     .strict()
 });
@@ -79,7 +51,7 @@ export const ChangePasswordSchema = z.object({
     .object({
       currentPassword: PASSWORD,
       newPassword: PASSWORD,
-      logoutOtherSessions: z.boolean()
+      signOutOtherSessions: z.boolean()
     })
     .strict()
 });
@@ -88,7 +60,7 @@ export const SetPasswordSchema = z.object({
   body: z
     .object({
       newPassword: PASSWORD,
-      logoutOtherSessions: z.boolean()
+      signOutOtherSessions: z.boolean()
     })
     .strict()
 });
