@@ -13,8 +13,9 @@ import {
 import { redis } from '#/providers';
 import {
   TCodeRecord,
-  TCreateCodeRecord,
-  TVerifyCodeRecord
+  TCreateCode,
+  TGetRecordKey,
+  TVerifyCode
 } from '#/types/code.types';
 
 export class CodeService {
@@ -23,7 +24,12 @@ export class CodeService {
     return random.toString().padStart(6, '0');
   }
 
-  static async createCodeRecord({ recordKey }: TCreateCodeRecord) {
+  private static getRecordKey({ idKey }: TGetRecordKey) {
+    return `code:${idKey}`;
+  }
+
+  static async createCode({ idKey }: TCreateCode) {
+    const recordKey = this.getRecordKey({ idKey });
     const record = await redis.get(recordKey);
     let newRequestCount = 1;
 
@@ -62,7 +68,8 @@ export class CodeService {
     return { code: newRecord.code };
   }
 
-  static async verifyCodeRecord({ recordKey, code }: TVerifyCodeRecord) {
+  static async verifyCode({ idKey, code }: TVerifyCode) {
+    const recordKey = this.getRecordKey({ idKey });
     const record = await redis.get(recordKey);
     if (!record) {
       throw new CodeNotFoundOrExpiredError();

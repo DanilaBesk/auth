@@ -5,11 +5,15 @@ export type TCodeRecord = {
   requestCount: number;
 };
 
-export type TCreateCodeRecord = {
-  recordKey: string;
+export type TGetRecordKey = {
+  idKey: string;
 };
 
-export type TVerifyCodeRecord = {
-  recordKey: string;
+export type TCreateCode = {
+  idKey: string;
+};
+
+export type TVerifyCode = {
+  idKey: string;
   code: string;
 };
