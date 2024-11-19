@@ -1,6 +1,6 @@
 import { CONFIG } from '#config';
 import { mailTransporter } from '#/providers';
-import { UnexpectedError } from '#/errors/classes.errors';
+import { UnexpectedError } from '#/errors/common-classes.errors';
 import { TSend, TSendActionCode } from '#/types/mail.types';
 import {
   getEmailChangeCodeHtml,
@@ -18,6 +18,10 @@ import {
   getUserDeletionCodeHtml,
   getUserDeletionCodeText
 } from '#/templates/get-user-deletion-code.template';
+import {
+  getSignInCodeHtml,
+  getSignInCodeText
+} from '#/templates/get-sign-in-code.template';
 
 export class MailService {
   private static sendMail({
@@ -64,6 +68,27 @@ export class MailService {
       subject: `${code} - код активации аккаунта`,
       html: getUserActivationCodeHtml(options),
       text: getUserActivationCodeText(options)
+    });
+  }
+
+  static async sendSignInCode({
+    email,
+    code,
+    requestIp,
+    requestIpData,
+    requestTime
+  }: TSendActionCode) {
+    const options = {
+      code,
+      requestIp,
+      requestIpData,
+      requestTime
+    };
+    return await this.sendMail({
+      email,
+      subject: `${code} - код для входа в аккаунт`,
+      html: getSignInCodeHtml(options),
+      text: getSignInCodeText(options)
     });
   }
 
